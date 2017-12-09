@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+WARNING: This file should be changed carefully and a backup should be
+taken before any changes so that they can be backed out.  Changed lines
+can also be commented out as below.
+-->
+
+<!--
+This config file contains all the variables used by the DataExtractor
+MapBasic tool.
+
+The 'configuration' node is the 'root' node and signifies the start of the
+contents of the configuration file.
+
+The 'DataBuffer' node contains all of the entries relating to the
+MapBasic tool variables.
+
+Each entry relates to a file, folder, table name, column name or variable
+used by the MapBasic tool to buffer and combine data for the buffered species
+layers.
+-->
+
+<configuration>
+<DataBuffer>
+
+  <!-- The existing file location where log files will be saved with output messages -->
+  <LogFilePath>
+	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\Logs</value>
+  </LogFilePath>
+
+  <!-- Shall we clear the log file by default? Yes/No -->
+  <DefaultClearLogFile>
+  	<value>Yes</value>
+  </DefaultClearLogFile>
+
+  <!-- The existing file location where the new GIS layer will be created -->
+  <DefaultPath>
+	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\Data</value>
+  </DefaultPath>
+
+  <OutColumnDefs>
+	<Value>CommonName Char(100), SciName Char(100), RecYear Char(11), GridRef Char(12), Location Char(100), Design Char(100), Version Char(100), Origin Char(100), Provider Char(100), Copyright Char(100)</Value>
+  </OutColumnDefs>
+
+  <LayerFolder>
+  	<value>c:\aTest</value>
+  </LayerFolder>
+
+  <!--The coordinate system for mapping tables 
+  <CoordinateSystem>
+	<value>Earth Projection 8, 79, "m", -2, 49, 0.9996012717, 400000, -100000</value>
+  </CoordinateSystem> -->
+  
+  <!-- The names and local names of the GIS layers to be processed -->
+  <InLayers>
+	<Badgers>
+		<LayerName>
+			<Value>Badgers</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value> <!-- for e.g. years: RecYear >= (EXTRACT(YEAR FROM CURRENT_DATE) - 11) -->
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>100</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>0</Value>
+		</DissolveSize>
+	</Badgers>
+	<BarnOwls>
+		<LayerName>
+			<Value>Barn_Owls</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>100</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>0</Value>
+		</DissolveSize>
+	</BarnOwls>
+	<Bats>
+		<LayerName>
+			<Value>Bats</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>100</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>0</Value>
+		</DissolveSize>
+	</Bats>
+	<Dormice>
+		<LayerName>
+			<Value>Dormice</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>100</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>100</Value>
+		</DissolveSize>
+	</Dormice>
+	<GCNs>
+		<LayerName>
+			<Value>GCNs</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>100</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>0</Value>
+		</DissolveSize>
+	</GCNs>
+	<WaterVoles>
+		<LayerName>
+			<Value>Water_Voles</Value>
+		</LayerName>
+		<Columns>
+			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>SciName, GridRef, Location</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>20</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>20</Value>
+		</DissolveSize>
+	</WaterVoles>
+	<WaterVolesRivers>
+		<LayerName>
+			<Value>Water_Voles_Rivers</Value>
+		</LayerName>
+		<Columns>
+			<Value>Common_Name "CommonName", Scientific_Name "SciName", Year "RecYear", GridRef, Location, UK_Legislation + ", " + Priority_NERC_S41 "Design", Version_Date "Version", Data_Origin "Origin", "TVERC" "Provider", "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		</Columns>
+		<WhereClause>
+			<value>Year &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+		</WhereClause>
+		<SortOrder>
+			<Value>Scientific_Name, GridRef</Value>
+		</SortOrder>
+		<BufferSize>
+			<Value>10</Value>
+		</BufferSize>
+		<DissolveSize>
+			<Value>10</Value>
+		</DissolveSize>
+	</WaterVolesRivers>
+  </InLayers>
+
+  <!-- The details of the new GIS layer to be created -->
+  <OutLayer>
+	<!-- The columns in the new GIS layer and how they will be created -->
+	<!-- Valid column types are  "key", "cluster", "first", "common", "min", "max", "range" -->
+	<Columns>
+		<Col1>
+			<ColumnName>
+				<value>CommonName</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Key</value>
+			</ColumnType>
+		</Col1>
+		<Col2>
+			<ColumnName>
+				<value>SciName</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Key</value>
+			</ColumnType>
+		</Col2>
+		<Col3>
+			<ColumnName>
+				<value>Date</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Range</value>
+			</ColumnType>
+		</Col3>
+		<Col4>
+			<ColumnName>
+				<value>GridRef</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Cluster</value>
+			</ColumnType>
+		</Col4>
+		<Col5>
+			<ColumnName>
+				<value>Location</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Common</value>
+			</ColumnType>
+		</Col5>
+		<Col6>
+			<ColumnName>
+				<value>Design</value>
+			</ColumnName>
+			<ColumnType>
+				<value>First</value>
+			</ColumnType>
+		</Col6>
+		<Col7>
+			<ColumnName>
+				<value>Version</value>
+			</ColumnName>
+			<ColumnType>
+				<value>First</value>
+			</ColumnType>
+		</Col7>
+		<Col8>
+			<ColumnName>
+				<value>Origin</value>
+			</ColumnName>
+			<ColumnType>
+				<value>Common</value>
+			</ColumnType>
+		</Col8>
+		<Col9>
+			<ColumnName>
+				<value>Provider</value>
+			</ColumnName>
+			<ColumnType>
+				<value>First</value>
+			</ColumnType>
+		</Col9>
+		<Col10>
+			<ColumnName>
+				<value>Copyright</value>
+			</ColumnName>
+			<ColumnType>
+				<value>First</value>
+			</ColumnType>
+		</Col10>
+	</Columns>
+
+	<!-- The symbology to apply to the new GIS layer -->
+	<LayerFile>
+		<value>aTest.lyr</value>
+	</LayerFile>
+  </OutLayer>
+
+</DataBuffer>
+</configuration>

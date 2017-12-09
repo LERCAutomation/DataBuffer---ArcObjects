@@ -1,0 +1,9 @@
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.dll
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.pdb
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.csprojResolveAssemblyReference.cache
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.dll
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.pdb
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.dll.config
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.frmDataBuffer.resources
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.csproj.GenerateResource.Cache
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.esriAddIn
