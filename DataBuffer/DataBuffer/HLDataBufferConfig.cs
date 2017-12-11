@@ -379,7 +379,7 @@ namespace HLDataBufferConfig
                     try
                     {
                         strRawText = aNode["FieldType"].InnerText.ToUpper();
-                        if (ColumnTypes.Contains(strRawText))
+                        if (FieldTypes.Contains(strRawText))
                         {
                             thisColumn.FieldType = strRawText; // Always upper case.
                         }

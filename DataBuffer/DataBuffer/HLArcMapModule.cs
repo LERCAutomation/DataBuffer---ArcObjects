@@ -448,17 +448,8 @@ namespace HLArcMapModule
         public bool FieldExists(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
         {
 
-            //int aTest;
             IFields theFields = aFeatureClass.Fields;
             return FieldExists(theFields, aFieldName, aLogFile, Messages);
-            //aTest = theFields.FindField(aFieldName);
-            //if (aTest == -1)
-            //{
-            //    aTest = theFields.FindFieldByAliasName(aFieldName);
-            //}
-
-            //if (aTest == -1) return false;
-            //return true;
         }
 
         public bool FieldExists(IFields theFields, string aFieldName, string aLogFile = "", bool Messages = false)
@@ -588,6 +579,37 @@ namespace HLArcMapModule
         {
             IFeatureClass pFC = GetFeatureClass(aFeatureClass, aLogFile, Messages);
             return AddField(pFC, aFieldName, aFieldType, aLength, aLogFile, Messages);
+        }
+
+        public bool AddField(string aFeatureClass, string aFieldName, string aFieldType, int aLength, string aLogFile = "", bool Messages = false)
+        {
+            // This takes a strict list of field type strings:
+            List<string> FieldTypes = new List<string>() { "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE" };
+            List<esriFieldType> EsriTypes = new List<esriFieldType>() {esriFieldType.esriFieldTypeString, esriFieldType.esriFieldTypeSingle, 
+                                                                       esriFieldType.esriFieldTypeDouble, esriFieldType.esriFieldTypeSmallInteger,
+                                                                       esriFieldType.esriFieldTypeInteger, esriFieldType.esriFieldTypeDate};
+
+            if (!FieldTypes.Contains(aFieldType))
+            {
+                if (Messages) MessageBox.Show("The fieldtype " + aFieldType + " is not a valid type", "Add Field");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function AddField returned the following error: The fieldtype " + aFieldType + " is not a valid type");
+                return false;
+            }
+
+            esriFieldType theType = esriFieldType.esriFieldTypeString; // the default.
+            int a = 0;
+            foreach (string aType in FieldTypes)
+            {
+                if (aType == aFieldType)
+                {
+                    theType = EsriTypes[a];
+                    break;
+                }
+                a++;
+            }
+
+            return AddField(aFeatureClass, aFieldName, theType, aLength, aLogFile, Messages);
         }
 
         public bool AddLayerField(string aLayer, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
@@ -1159,9 +1181,50 @@ namespace HLArcMapModule
                 pLayer = pLayers.Next();
             }
             return null;
-        }      
-        
-        public bool MoveToGroupLayer(string theGroupLayerName, ILayer aLayer,  string aLogFile = "", bool Messages = false)
+        }
+
+        public bool LayerExistsInGroupLayer(string LayerName, string GroupLayerName, string aLogFile = "", bool Messages = false)
+        {
+            if (!GroupLayerExists(GroupLayerName))
+            {
+                if (Messages) MessageBox.Show("Group layer " + GroupLayerName + " doesn't exist", "Layer Exists In Group");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function LayerExistsInGroupLayer returned the following error: Group layer " + GroupLayerName + " doesn't exist");
+            }
+
+            if (!LayerExists(LayerName))
+            {
+                if (Messages) MessageBox.Show("Layer " + LayerName + " doesn't exist", "Layer Exists In Group");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function LayerExistsInGroupLayer returned the following error: Layer " + LayerName + " doesn't exist");
+            }
+
+            ICompositeLayer myCL = (ICompositeLayer)GetGroupLayer(GroupLayerName);
+            bool blFoundIt = false;
+            for (int i = 0; i < myCL.Count; i++)
+            {
+                ILayer pLayer = myCL.Layer[i];
+                if (pLayer.Name == LayerName)
+                    blFoundIt = true;
+            }
+
+            return blFoundIt;
+        }
+
+        public List<ILayer> GetLayersInGroup(string GroupLayerName)
+        {
+            // Untested
+            ICompositeLayer myCL = (ICompositeLayer)GetGroupLayer(GroupLayerName);
+            List<ILayer> theLayers = new List<ILayer>();
+            for (int i = 0; i < myCL.Count; i++)
+            {
+                theLayers.Add(myCL.Layer[i]);
+            }
+            return theLayers;
+        }
+
+
+        public bool MoveToGroupLayer(string theGroupLayerName, ILayer aLayer, string aLogFile = "", bool Messages = false)
         {
             bool blExists = false;
             IGroupLayer myGroupLayer = new GroupLayer(); 
@@ -1170,6 +1233,7 @@ namespace HLArcMapModule
             {
                 myGroupLayer = (IGroupLayer)GetGroupLayer(theGroupLayerName, aLogFile, Messages);
                 blExists = true;
+                
             }
             else
             {

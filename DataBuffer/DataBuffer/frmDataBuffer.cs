@@ -129,7 +129,7 @@ namespace DataBuffer
 
             while (!blDone)
             {
-                strOutputFile = myArcMapFuncs.GetOutputFileName(myConfig.OutputFormat, myConfig.DefaultPath);
+                strOutputFile = myArcMapFuncs.GetOutputFileName(myConfig.OutputLayer.Format, myConfig.DefaultPath);
                 if (strOutputFile != "None")
                 {
                     // Does this output file already exist?

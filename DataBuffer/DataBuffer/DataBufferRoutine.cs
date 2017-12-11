@@ -70,7 +70,7 @@ namespace DataBuffer
             }
             strMessage = strMessage.Substring(0, strMessage.Length - 2) + ".";
             myFileFuncs.WriteLine(strLogFile, strMessage);
-            myFileFuncs.WriteLine(strLogFile, "The output layer is " + OutputFile + ".");
+            myFileFuncs.WriteLine(strLogFile, "The output layer is " + anOutputFile + ".");
             strMessage = "The following output columns are included: ";
             foreach (OutputColumn aCol in OutputLayer.OutputColumns)
             {
@@ -83,26 +83,48 @@ namespace DataBuffer
             myArcMapFuncs.ToggleTOC(false);
 
             // 2. Create the empty output FC using correct definitions.
+            string strOutFCName = myFileFuncs.GetFileName(anOutputFile);
+            string strOutFolder = myFileFuncs.GetDirectoryName(anOutputFile);
+            // 2a. Create empty FC
+            myArcMapFuncs.CreateFeatureClass(strOutFCName, strOutFolder, ESRI.ArcGIS.Geometry.esriGeometryType.esriGeometryPolygon, aLogFile);
+            myFileFuncs.WriteLine(strLogFile, "Output Feature Class " + anOutputFile + " created.");
+            // 2b. Add fields
+            foreach (OutputColumn aCol in OutputLayer.OutputColumns)
+            {
+                // What is the column type?
 
-            // 3. For each species type (note we have points and polygons separate)
+                myArcMapFuncs.AddField(anOutputFile, aCol.ColumnName, aCol.FieldType, aCol.ColumnLength, aLogFile);
+            }
+            myFileFuncs.WriteLine(strLogFile, "New fields written to output Feature Class " + strOutFCName);
 
-            // buffer to the required distance
+            // 3. For each input layer type (note we have points and polygons separate)
+            foreach (MapLayer anInputLayer in InputLayers)
+            {
 
-            // Merge the two buffered layers as relevant.
+                // If DissolveDistance > 0:
+                // FIRST OF ALL Work out what the clusters are.
+                // 1. Assign unique IDs
+                // 2. Buffer the points/polys with the DissolveDistance.
+                // 3. Dissolve the resulting polygons on key fields and overlap
+                // 4. Assign cluster IDs.
+                // 5. Spatial join of the original points/polys back onto this layer
+                // 6. Query where key fields are the same - this will give us the cluster IDs for each point/poly.
+                // 7. Calculate cluster ID back onto points/polys in new field using attribute join on unique ID.
+                
+                
+                // 8. We now have all the information that we need. Buffer all points/polys to required distance.
+                // 9. Dissolve on key fields, including cluster ID if relevant. If DissolveDistance = 0 then Cluster fields are also key.
+                // 10. Derive statistics during the dissolve, and for the common / cluster fields by multiple summaries to get max_count
 
-            // We now have the rawest of inputs. 
-            // 4. Dissolve on the selected key columns using as much as the innate functionality as possible
-            //    KEEP A TRACK OF FIELD NAMES DURING ALL SUBSEQUENT PROCESSING
-            //    Use Min and Range to allow for range calculations.
-            //    This becomes the raw output file from which results will be read. 
+                // 11. Dissolve taking into account key fields; if DissolveDistance = 0 then any Cluster fields are also a key field.
+                // 12. Calculate any ranges as required using min and math range; keep track of field names or indices.
 
-            // 5. Calculate any ranges into new fields as required.
+                // 13. Using an insert cursor add the new records to the empty FC.
+                
 
-            // 6. To estimate modal value go through two sets of summary tables to get the max occurrence for 
-            //    each common field for each key combo and use these during (7)
-
-            // 7. Using an insert cursor add the new records to the empty FC
-
+            }
+            myArcMapFuncs.ToggleDrawing(true);
+            myArcMapFuncs.ToggleTOC(true);
             return -999; // Return the number of records inserted.
         }
     }
