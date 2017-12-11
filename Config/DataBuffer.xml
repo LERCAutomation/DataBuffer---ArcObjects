@@ -39,18 +39,15 @@ layers.
 	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\Data</value>
   </DefaultPath>
 
-  <OutColumnDefs>
-	<Value>CommonName Char(100), SciName Char(100), RecYear Char(11), GridRef Char(12), Location Char(100), Design Char(100), Version Char(100), Origin Char(100), Provider Char(100), Copyright Char(100)</Value>
-  </OutColumnDefs>
-
   <LayerFolder>
   	<value>c:\aTest</value>
   </LayerFolder>
 
-  <!--The coordinate system for mapping tables 
+  <!--The coordinate system for output -->
   <CoordinateSystem>
 	<value>Earth Projection 8, 79, "m", -2, 49, 0.9996012717, 400000, -100000</value>
-  </CoordinateSystem> -->
+  </CoordinateSystem>
+
   
   <!-- The names and local names of the GIS layers to be processed -->
   <InLayers>
@@ -76,7 +73,7 @@ layers.
 	</Badgers>
 	<BarnOwls>
 		<LayerName>
-			<Value>Barn_Owls</Value>
+			<Value>BarnOwls</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
@@ -198,6 +195,15 @@ layers.
 
   <!-- The details of the new GIS layer to be created -->
   <OutLayer>
+  	<!-- The output format for the buffer layer -->
+  	<!-- Use Shape (Shapefile) or GDB (file Geodatabase) -->
+  	<OutputFormat>
+  		<value>GDB</value> 
+  	</OutputFormat>
+  	<!-- The symbology to apply to the new GIS layer -->
+	<LayerFile>
+		<value>aTest.lyr</value>
+	</LayerFile>
 	<!-- The columns in the new GIS layer and how they will be created -->
 	<!-- Valid column types are  "key", "cluster", "first", "common", "min", "max", "range" -->
 	<Columns>
@@ -208,6 +214,13 @@ layers.
 			<ColumnType>
 				<value>Key</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType> <!-- "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE" -->
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
+
 		</Col1>
 		<Col2>
 			<ColumnName>
@@ -216,14 +229,26 @@ layers.
 			<ColumnType>
 				<value>Key</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType> <!-- "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE" -->
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col2>
 		<Col3>
 			<ColumnName>
-				<value>Date</value>
+				<value>RecYear</value>
 			</ColumnName>
 			<ColumnType>
 				<value>Range</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>11</value>
+			</ColumnLength>
 		</Col3>
 		<Col4>
 			<ColumnName>
@@ -232,6 +257,12 @@ layers.
 			<ColumnType>
 				<value>Cluster</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>12</value>
+			</ColumnLength>
 		</Col4>
 		<Col5>
 			<ColumnName>
@@ -240,6 +271,12 @@ layers.
 			<ColumnType>
 				<value>Common</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col5>
 		<Col6>
 			<ColumnName>
@@ -248,6 +285,12 @@ layers.
 			<ColumnType>
 				<value>First</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col6>
 		<Col7>
 			<ColumnName>
@@ -256,6 +299,12 @@ layers.
 			<ColumnType>
 				<value>First</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col7>
 		<Col8>
 			<ColumnName>
@@ -264,6 +313,12 @@ layers.
 			<ColumnType>
 				<value>Common</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col8>
 		<Col9>
 			<ColumnName>
@@ -272,6 +327,12 @@ layers.
 			<ColumnType>
 				<value>First</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col9>
 		<Col10>
 			<ColumnName>
@@ -280,13 +341,14 @@ layers.
 			<ColumnType>
 				<value>First</value>
 			</ColumnType>
+			<FieldType>
+				<value>TEXT</value>
+			</FieldType>
+			<ColumnLength>
+				<value>100</value>
+			</ColumnLength>
 		</Col10>
 	</Columns>
-
-	<!-- The symbology to apply to the new GIS layer -->
-	<LayerFile>
-		<value>aTest.lyr</value>
-	</LayerFile>
   </OutLayer>
 
 </DataBuffer>

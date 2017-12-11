@@ -1316,26 +1316,40 @@ namespace HLArcMapModule
             IGxObjectFilter myFilter;
 
 
-            switch (aFileType)
+            //switch (aFileType)
+            //{
+            //    case "Geodatabase FC":
+            //        myFilter = new GxFilterFGDBFeatureClasses();
+            //        break;
+            //    case "Geodatabase Table":
+            //        myFilter = new GxFilterFGDBTables();
+            //        break;
+            //    case "Shapefile":
+            //        myFilter = new GxFilterShapefiles();
+            //        break;
+            //    case "DBASE file":
+            //        myFilter = new GxFilterdBASEFiles();
+            //        break;
+            //    case "Text file":
+            //        myFilter = new GxFilterTextFiles();
+            //        break;
+            //    default:
+            //        myFilter = new GxFilterDatasets();
+            //        break;
+            //}
+
+            // Simplified version; shape or gdb only.
+            if (aFileType == "gdb")
             {
-                case "Geodatabase FC":
-                    myFilter = new GxFilterFGDBFeatureClasses();
-                    break;
-                case "Geodatabase Table":
-                    myFilter = new GxFilterFGDBTables();
-                    break;
-                case "Shapefile":
-                    myFilter = new GxFilterShapefiles();
-                    break;
-                case "DBASE file":
-                    myFilter = new GxFilterdBASEFiles();
-                    break;
-                case "Text file":
-                    myFilter = new GxFilterTextFiles();
-                    break;
-                default:
-                    myFilter = new GxFilterDatasets();
-                    break;
+                myFilter = new GxFilterFGDBFeatureClasses();
+            }
+            else if (aFileType == "shape")
+            {
+                myFilter = new GxFilterShapefiles();
+            }
+            else
+            {
+                myFilter = new GxFilterDatasets();
             }
 
             myDialog.ObjectFilter = myFilter;
@@ -1348,6 +1362,7 @@ namespace HLArcMapModule
                 strOutFile = myDialog.FinalLocation.FullName + @"\" + myDialog.Name;
             }
             myDialog = null;
+            myFilter = null;
             return strOutFile; // "None" if user pressed exit
         }
 
@@ -3844,7 +3859,7 @@ namespace HLArcMapModule
         }
 
 
-        public void ToggleTOC()
+        public void ToggleTOC(bool AllowTOC)
         {
             IApplication m_app = thisApplication;
 
@@ -3852,14 +3867,10 @@ namespace HLArcMapModule
             UID uid = new UIDClass();
             uid.Value = "{368131A0-F15F-11D3-A67E-0008C7DF97B9}";
             IDockableWindow pTOC = pDocWinMgr.GetDockableWindow(uid);
-            if (pTOC.IsVisible())
-                pTOC.Show(false); 
-            else pTOC.Show(true);
-
+            pTOC.Show(AllowTOC);
             
             IActiveView activeView = GetActiveView();
             activeView.Refresh();
-
         }
 
         public void SetContentsView()

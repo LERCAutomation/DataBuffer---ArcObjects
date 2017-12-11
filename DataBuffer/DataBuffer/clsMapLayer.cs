@@ -82,6 +82,7 @@ namespace DataBuffer
     {
         public OutputColumns OutputColumns { get; set; }
         public string LayerFile { get; set; }
+        public string Format { get; set; }
 
         public OutputLayer()
         {
@@ -93,6 +94,8 @@ namespace DataBuffer
         public string ColumnTag { get; set; } // Only used for error reporting.
         public string ColumnName { get; set; }
         public string ColumnType { get; set; }
+        public string FieldType { get; set; }
+        public int ColumnLength { get; set; }
 
         public OutputColumn()
         {

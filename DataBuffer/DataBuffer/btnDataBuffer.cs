@@ -15,9 +15,6 @@ namespace DataBuffer
         {
             frmDataBuffer myForm = new frmDataBuffer();
             myForm.ShowDialog();
-            //
-            //  TODO: Sample code showing how to access button host
-            //
             ArcMap.Application.CurrentTool = null;
         }
         protected override void OnUpdate()

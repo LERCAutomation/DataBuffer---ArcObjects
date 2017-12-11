@@ -102,6 +102,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Config.esriaddinx</DependentUpon>
     </Compile>
+    <Compile Include="DataBufferRoutine.cs" />
     <Compile Include="frmDataBuffer.cs">
       <SubType>Form</SubType>
     </Compile>

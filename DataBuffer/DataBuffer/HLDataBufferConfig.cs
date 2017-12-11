@@ -13,9 +13,6 @@ using HLStringFunctions;
 
 namespace HLDataBufferConfig
 {
-    
-    
-
     class DataBufferConfig
     {
         // Declare all the variables.
@@ -24,7 +21,8 @@ namespace HLDataBufferConfig
         private bool defaultClearLog;
         private string defaultPath;
         private string layerPath;
-        private string outColumnDefs;
+
+        //private string outColumnDefs;
         public string LogFilePath 
         { 
             get
@@ -56,14 +54,6 @@ namespace HLDataBufferConfig
             }
         }
 
-        public string OutColumnDefs 
-        { 
-            get
-            {
-                return outColumnDefs;
-            } 
-        }
-
         private MapLayers inputLayers = new MapLayers();
         public MapLayers InputLayers
         {
@@ -74,6 +64,13 @@ namespace HLDataBufferConfig
         }
 
         private OutputLayer outputLayer = new OutputLayer();
+        public OutputLayer OutputLayer
+        {
+            get
+            {
+                return outputLayer;
+            }
+        }
 
         private bool foundXML;
         private bool loadedXML;
@@ -165,19 +162,6 @@ namespace HLDataBufferConfig
 
                 try
                 {
-                    defaultPath = xmlDataExtract["DefaultPath"].InnerText;
-                }
-                catch
-                {
-                    MessageBox.Show("Could not locate the item 'DefaultPath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    loadedXML = false;
-                    return;
-                }
-
-               
-
-                try
-                {
                     defaultClearLog = false;
                     string strDefaultClearLogFile = xmlDataExtract["DefaultClearLogFile"].InnerText;
                     if (strDefaultClearLogFile == "Yes")
@@ -190,13 +174,30 @@ namespace HLDataBufferConfig
                     return;
                 }
 
-                
+                try
+                {
+                    defaultPath = xmlDataExtract["DefaultPath"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultPath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    loadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    layerPath = xmlDataExtract["LayerFolder"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'LayerFolder' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    loadedXML = false;
+                    return;
+                }
 
 
-                // Layer options. 
-                
-
-                // Now do the GIS Layers.
+                // Locate the GIS Layers.
                 XmlElement MapLayerCollection = null;
                 try
                 {
@@ -213,6 +214,17 @@ namespace HLDataBufferConfig
                 {
                     MapLayer thisLayer = new MapLayer();
                     thisLayer.DisplayName = aNode.Name;
+
+                    try
+                    {
+                        thisLayer.LayerName = aNode["LayerName"].InnerText;
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Could not locate the item 'LayerName' for map layer " + thisLayer.DisplayName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        loadedXML = false;
+                        return;
+                    }
 
                     try
                     {
@@ -292,6 +304,9 @@ namespace HLDataBufferConfig
                     if (loadedXML)
                         inputLayers.Add(thisLayer);
                 }
+
+
+
                 // Now get the output layer definition
                 XmlElement OutLayerDef = null;
                 try
@@ -305,7 +320,7 @@ namespace HLDataBufferConfig
                     return;
                 } 
 
-                // Get to the columns (not sure this works)
+                // Get to the columns
                 XmlNode ColumnNode = null;
                 try
                 {
@@ -360,6 +375,48 @@ namespace HLDataBufferConfig
                         return;
                     }
 
+                    List<string> FieldTypes = new List<string>() { "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE"};
+                    try
+                    {
+                        strRawText = aNode["FieldType"].InnerText.ToUpper();
+                        if (ColumnTypes.Contains(strRawText))
+                        {
+                            thisColumn.FieldType = strRawText; // Always upper case.
+                        }
+                        else
+                        {
+                            MessageBox.Show("The value for 'FieldType' for output column " + thisColumn.ColumnTag + " in the XML file is not valid", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            loadedXML = false;
+                            return;
+                        }
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Could not locate the item 'ColumnType' for output column " + thisColumn.ColumnTag + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        loadedXML = false;
+                        return;
+                    }
+
+                    try
+                    {
+                        int a;
+                        bool blResult = int.TryParse(aNode["ColumnLength"].InnerText, out a);
+                        if (blResult)
+                            thisColumn.ColumnLength = a;
+                        else
+                        {
+                            MessageBox.Show("Could not locate the item 'ColumnLength' for map layer " + thisColumn.ColumnTag + " in the XML file, or the item is not an integer", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            loadedXML = false;
+                            return;
+                        }
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Could not locate the item 'ColumnLength' for map layer " + thisColumn.ColumnTag + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        loadedXML = false;
+                        return;
+                    }
+
                     if (loadedXML)
                     {
                         theOutputColumns.Add(thisColumn);
@@ -379,7 +436,28 @@ namespace HLDataBufferConfig
                     MessageBox.Show("Could not locate the item 'LayerFile' for the OutLayer in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     loadedXML = false;
                     return;
-                }              
+                }
+
+                try
+                {
+                    List<string> OutputFormatList = new List<string>() { "shape", "gdb" };
+                    strRawText = OutLayerDef["OutputFormat"].InnerText.ToLower();
+                    if (OutputFormatList.Contains(strRawText))
+                    {
+                        outputLayer.Format = strRawText;
+                    }
+                    else
+                    {
+                        MessageBox.Show("The entry for the output layer's OutputFormat in the XML file is not valid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        loadedXML = false;
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'OutputFormat' for the OutLayer in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    loadedXML = false;
+                    return;
+                }
             }
         }
 

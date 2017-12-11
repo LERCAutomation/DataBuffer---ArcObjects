@@ -33,7 +33,7 @@
             this.lblInput = new System.Windows.Forms.Label();
             this.chkClearLog = new System.Windows.Forms.CheckBox();
             this.btnOK = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btnCancel = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lstInput
@@ -41,6 +41,7 @@
             this.lstInput.FormattingEnabled = true;
             this.lstInput.Location = new System.Drawing.Point(15, 26);
             this.lstInput.Name = "lstInput";
+            this.lstInput.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
             this.lstInput.Size = new System.Drawing.Size(193, 212);
             this.lstInput.TabIndex = 0;
             // 
@@ -73,15 +74,15 @@
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
-            // button1
+            // btnCancel
             // 
-            this.button1.Location = new System.Drawing.Point(93, 263);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(54, 23);
-            this.button1.TabIndex = 4;
-            this.button1.Text = "&Cancel";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.btnCancel.Location = new System.Drawing.Point(93, 263);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(54, 23);
+            this.btnCancel.TabIndex = 4;
+            this.btnCancel.Text = "&Cancel";
+            this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.Click += new System.EventHandler(this.button1_Click);
             // 
             // frmDataBuffer
             // 
@@ -90,12 +91,16 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(218, 298);
             this.Controls.Add(this.lstInput);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.chkClearLog);
             this.Controls.Add(this.lblInput);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.Name = "frmDataBuffer";
+            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Data Buffer 1.0";
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -108,7 +113,7 @@
         private System.Windows.Forms.Label lblInput;
         private System.Windows.Forms.CheckBox chkClearLog;
         private System.Windows.Forms.Button btnOK;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnCancel;
       
     }
 }
