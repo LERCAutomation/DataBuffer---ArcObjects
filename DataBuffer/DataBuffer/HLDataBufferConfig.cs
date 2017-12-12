@@ -21,6 +21,7 @@ namespace HLDataBufferConfig
         private bool defaultClearLog;
         private string defaultPath;
         private string layerPath;
+        private string tempFilePath;
 
         //private string outColumnDefs;
         public string LogFilePath 
@@ -51,6 +52,14 @@ namespace HLDataBufferConfig
             get
             {
                 return layerPath;
+            }
+        }
+
+        public string TempFilePath
+        {
+            get
+            {
+                return tempFilePath;
             }
         }
 
@@ -187,15 +196,25 @@ namespace HLDataBufferConfig
 
                 try
                 {
-                    layerPath = xmlDataExtract["LayerFolder"].InnerText;
+                    layerPath = xmlDataExtract["LayerPath"].InnerText;
                 }
                 catch
                 {
-                    MessageBox.Show("Could not locate the item 'LayerFolder' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Could not locate the item 'LayerPath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     loadedXML = false;
                     return;
                 }
 
+                try
+                {
+                    tempFilePath = xmlDataExtract["TempFilePath"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'TempFilePath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    loadedXML = false;
+                    return;
+                }
 
                 // Locate the GIS Layers.
                 XmlElement MapLayerCollection = null;
@@ -226,9 +245,68 @@ namespace HLDataBufferConfig
                         return;
                     }
 
+                    // Sort out the columns. This is pretty involved.
                     try
                     {
-                        thisLayer.Columns = aNode["Columns"].InnerText;
+                        InputColumns theInputColumns = new InputColumns();
+                        string strColumnList = aNode["Columns"].InnerText;
+                        // We have the format (inputColumn1 "outputColumn1", inputColumn2, inputColumn3, "outputColumn3", "inputText" "outputColumn4", ...)
+                        // Firstly split the list at the commas.
+                        List<string> strColumnDefList = strColumnList.Split(',').ToList();
+                        // Go through these and sort out what's what.
+                        foreach (string aColumnDef in strColumnDefList)
+                        {
+                            InputColumn thisInputColumn = new InputColumn();
+                            // Check if the first character is a "\"". If so, we deal with it slightly differently.
+                            string strColumnDef = aColumnDef.Trim(); // Remove any spaces.
+                            List<string> strColItems = new List<string>();
+                            if (strColumnDef.Substring(0, 1) == "\"")
+                            {
+                                // find the first entry.
+                                int position; // First character is a '"' so we don't want to find that.
+                                int start = 0;
+                                // Extract the items from the string.
+                                position = strColumnDef.IndexOf('\"', start + 1);
+                                if (position == 0) position = 1;
+                                if (position > 0)
+                                {
+                                    string strResult = strColumnDef.Substring(start, position - start + 1).Trim();
+                                    strColItems.Add(strResult);
+                                    //start = position;
+                                }
+                                // The second item is split by string. 
+                                List<string> strAllEntries = strColumnDef.Split(' ').ToList();
+                                string theEntry = strAllEntries[strAllEntries.Count - 1]; // Last entry.
+                                strColItems.Add(theEntry.Trim('"')); // Trim quotes if they are there.
+
+                            }
+                            else
+                            {
+                                // Split at space.
+                                strColItems = strColumnDef.Split(' ').ToList();
+                            }
+                            // Test to see how many elements.
+                            if (strColItems.Count == 1)
+                            {
+                                thisInputColumn.InputName = strColItems[0].Trim();
+                                thisInputColumn.OutputName = strColItems[0].Trim(); // They are both the same.
+                            }
+                            else if (strColItems.Count == 2)
+                            {
+                                thisInputColumn.InputName = strColItems[0].Trim();
+                                thisInputColumn.OutputName = strColItems[1].Trim('"'); // Trim quotes if they are there
+                            }
+                            else
+                            {
+                                // More than two elements; that's not right.
+                                MessageBox.Show("The column entry " + strColItems[0] + " for map layer " + thisLayer.DisplayName + " in the XML file contains " + strColItems.Count.ToString() + " items. It should only have two.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                loadedXML = false;
+                                return;
+                            }
+
+                            theInputColumns.Add(thisInputColumn);
+                        }
+                        thisLayer.InputColumns = theInputColumns;
                     }
                     catch
                     {
@@ -360,6 +438,28 @@ namespace HLDataBufferConfig
                         if (ColumnTypes.Contains(strRawText))
                         {
                             thisColumn.ColumnType = strRawText; // Always lower case.
+
+                            // Now also add this type to the relevant output column in ALL the input layers.
+                            foreach (MapLayer aLayer in inputLayers)
+                            {
+                                // Find the output column with the same name.
+                                bool blFoundIt = false;
+                                foreach (InputColumn aColumn in aLayer.InputColumns)
+                                {
+                                    if (aColumn.OutputName == thisColumn.ColumnName)
+                                    {
+                                        aColumn.ColumnType = strRawText;
+                                        blFoundIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!blFoundIt)
+                                {
+                                    MessageBox.Show("The output column " + thisColumn.ColumnName + " was not found for map layer " + aLayer.LayerName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    loadedXML = false;
+                                    return;
+                                }
+                            }
                         }
                         else
                         {

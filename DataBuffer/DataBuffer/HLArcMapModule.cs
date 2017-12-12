@@ -51,7 +51,7 @@ using HLFileFunctions;
 
 namespace HLArcMapModule
 {
-    class ArcMapFunctions
+    public class ArcMapFunctions
     {
         #region Constructor
         private IApplication thisApplication;
@@ -154,6 +154,33 @@ namespace HLArcMapModule
             return pWSF;
         }
 
+        public bool IsGDB(string aWorkspace, bool Messages = false)
+        {
+            // simply checks the last four characters to see if it's either a .mdb or a .gdb
+            string strTest = aWorkspace.Substring(aWorkspace.Length - 4, 4).ToLower();
+            if (strTest == ".mdb" || strTest == ".gdb")
+                return true;
+            else
+                return false;
+        }
+
+        public bool CreateWorkspace(string aWorkspace, bool Messages = false)
+        {
+            IWorkspaceFactory pWSF = GetWorkspaceFactory(aWorkspace);
+            try
+            {
+                pWSF.Create(myFileFuncs.GetDirectoryName(aWorkspace), myFileFuncs.GetFileName(aWorkspace), null, 0);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                pWSF = null;
+            }
+            return true;
+        }
 
         #region FeatureclassExists
         public bool FeatureclassExists(string aFilePath, string aDatasetName)
@@ -527,7 +554,7 @@ namespace HLArcMapModule
 
         }
 
-        public bool AddField(IFeatureClass aFeatureClass, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
+        public bool AddField(ref IFeatureClass aFeatureClass, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
         {
             // Validate input.
             if (aFeatureClass == null)
@@ -578,7 +605,9 @@ namespace HLArcMapModule
         public bool AddField(string aFeatureClass, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
         {
             IFeatureClass pFC = GetFeatureClass(aFeatureClass, aLogFile, Messages);
-            return AddField(pFC, aFieldName, aFieldType, aLength, aLogFile, Messages);
+            bool blResult = AddField(ref pFC, aFieldName, aFieldType, aLength, aLogFile, Messages);
+            pFC = null;
+            return blResult;
         }
 
         public bool AddField(string aFeatureClass, string aFieldName, string aFieldType, int aLength, string aLogFile = "", bool Messages = false)
@@ -608,8 +637,10 @@ namespace HLArcMapModule
                 }
                 a++;
             }
-
-            return AddField(aFeatureClass, aFieldName, theType, aLength, aLogFile, Messages);
+            bool blResult = AddField(aFeatureClass, aFieldName, theType, aLength, aLogFile, Messages);
+            FieldTypes = null;
+            EsriTypes = null;
+            return blResult;
         }
 
         public bool AddLayerField(string aLayer, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
@@ -639,8 +670,9 @@ namespace HLArcMapModule
             }
 
             IFeatureClass pFC = pFL.FeatureClass;
-            AddField(pFC, aFieldName, aFieldType, aLength, aLogFile, Messages);
-
+            AddField(ref pFC, aFieldName, aFieldType, aLength, aLogFile, Messages);
+            pFC = null;
+            pFL = null;
             return true;
         }
 
@@ -1330,6 +1362,7 @@ namespace HLArcMapModule
 
             // Look through the layers and carry on until found,
             // or we have reached the end of the list.
+            bool blResult = false;
             while (pLayer != null)
             {
                 if (!(pLayer is IGroupLayer))
@@ -1337,13 +1370,19 @@ namespace HLArcMapModule
                     if (pLayer.Name == aLayerName)
                     {
                         pMap.DeleteLayer(pLayer);
-                        return true;
+                        blResult = true;
+                        break;
+                        //return true;
                     }
 
                 }
                 pLayer = pLayers.Next();
             }
-            return false;
+            pLayer = null;
+            pMap = null;
+            pLayers = null;
+            return blResult;
+            //return false;
         }
 
         public bool RemoveLayer(ILayer aLayer, string aLogFile = "", bool Messages = false)
@@ -1484,13 +1523,11 @@ namespace HLArcMapModule
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
-                    // Wait for 1 second.
+                // Wait for 1 second.
                 if (Messages)
                 {
                     MessageBox.Show("Process complete");
                 }
-                gp = null;
-                return true;
             }
             catch (Exception ex)
             {
@@ -1505,9 +1542,16 @@ namespace HLArcMapModule
                     }
 
                 }
-                gp = null;
                 return false;
             }
+            finally
+            {
+                gp = null;
+                myresult = null;
+                sev = null;
+                parameters = null;
+            }
+            return true;
         }
 
         public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutFeatureClass, bool Overwrite = true, string aLogFile = "", bool Messages = false)
@@ -2111,7 +2155,7 @@ namespace HLArcMapModule
             myWin.Show(true);
         }
 
-        public bool BufferFeature(string aLayer, string anOutputName, string aBufferDistance, string AggregateFields, string aLogFile = "", bool Overwrite = true, bool Messages = false)
+        public bool BufferFeatures(string aLayer, string anOutputName, string aBufferDistance, string AggregateFields, string DissolveOption="NONE", string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
             // Firstly check if the output feature exists.
             if (FeatureclassExists(anOutputName))
@@ -2215,73 +2259,53 @@ namespace HLArcMapModule
 
         }
 
-        public bool BufferFeature(IFeature anInputFeature, string anOutputName, ISpatialReference aSpatialReference, double aBufferDistance, string aBufferUnit, string aLogFile = "", bool Overwrite = false, bool Messages = false)
+        public bool DissolveFeatures(string aLayer, string anOutputName, string aDissolveFieldList, string aStatisticsList, string aDissolveType = "SINGLE_PART", string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
-            // While this works it is tricky to get the spatial reference correct. THIS FUNCTION NOT USED IN THE PROJECT.
+
             // Firstly check if the output feature exists.
             if (FeatureclassExists(anOutputName))
             {
                 if (!Overwrite)
-                {   
+                {
                     if (Messages)
                         MessageBox.Show("The feature class " + anOutputName + " already exists. Cannot overwrite");
                     if (aLogFile != "")
-                        myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The feature class " + anOutputName + " already exists. Cannot overwrite");
+                        myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned: The feature class " + anOutputName + " already exists. Cannot overwrite");
                     return false;
                 }
-                else
-                {
-                    // Try to delete the output featureclass.
-                   
-                    bool blResult =  DeleteFeatureclass(anOutputName);
-                    if (!blResult)
-                    {
-                        if (Messages)
-                            MessageBox.Show("Cannot delete feature class " + anOutputName + ". Please check if it is open in another location");
-                        if (aLogFile != "")
-                            myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: Cannot delete feature class " + anOutputName + ". Please check if it is open in another location");
-                        return false;
-                    }
-                }
             }
-
-
-            // All set up, now buffer the feature.
-            IGeometry ptheGeometry = anInputFeature.Shape;
-            ptheGeometry.SpatialReference = aSpatialReference;
-           
-            //ptheGeometry.SpatialReference = esriSRGeoCSType.esriSRGeoCS_OSGB1936;
-            ITopologicalOperator5 pTopoOperator = (ITopologicalOperator5)ptheGeometry;
-            IGeometry pResultPoly = pTopoOperator.Buffer(aBufferDistance); // in map units. Think about this.
-
-            // create new featureclass
-            string strWSName = myFileFuncs.GetDirectoryName(anOutputName);
-            string strFCName = myFileFuncs.GetFileName(anOutputName);
-            IFeatureClass pNewFC;
-            try
+            if (!LayerExists(aLayer))
             {
-                pNewFC = CreateFeatureClass(strFCName, strWSName, esriGeometryType.esriGeometryPolygon);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Could not create new feature class " + anOutputName + ". System error: " + ex.Message);
+                if (Messages)
+                    MessageBox.Show("The layer " + aLayer + " does not exist in the map");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " does not exist in the map");
                 return false;
             }
 
-            // Store the resulting polygon. This is the simplest implementation.
-            try
+            if (GroupLayerExists(aLayer))
             {
-                IFeature newFeature = pNewFC.CreateFeature();
-                newFeature.Shape = pResultPoly;
-                newFeature.Store();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Could not insert new feature. System error: " + ex.Message);
+                if (Messages)
+                    MessageBox.Show("The layer " + aLayer + " is a group layer and cannot be buffered.");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " is a group layer and cannot be buffered");
                 return false;
             }
+            ILayer pLayer = GetLayer(aLayer);
+            try
+            {
+                IFeatureLayer pTest = (IFeatureLayer)pLayer;
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aLayer + " is not a feature layer");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " is not a feature layer");
+                return false;
+            }
+
             return true;
-            
         }
 
         public IFeatureClass CreateFeatureClass(String featureClassName, string featureWorkspaceName, esriGeometryType aGeometryType, string aLogFile = "", bool Overwrite = true, bool Messages = false, esriSRGeoCSType aSpatialReferenceSystem = esriSRGeoCSType.esriSRGeoCS_OSGB1936)
@@ -2381,6 +2405,51 @@ namespace HLArcMapModule
                 return false;
             }
 
+        }
+
+        public bool DeleteWorkspace(string aWorkspaceName, string aLogFile = "", bool Messages = false)
+        {
+            if (!myFileFuncs.DirExists(aWorkspaceName))
+            {
+                if (Messages) MessageBox.Show("Workspace " + aWorkspaceName + " doesn't exist.", "Delete Workspace");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function DeleteWorkspace returned the following error: Workspace " + aWorkspaceName + " doesn't exist.");
+                return false;
+            }
+
+            // a different approach using the geoprocessor object.
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+
+            // Populate the variant array with parameter values.
+            parameters.Add(aWorkspaceName);
+
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("Delete_management", parameters, null);
+
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                gp = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function DeleteWorkspace returned the following error: " + ex.Message);
+                gp = null;
+                return false;
+            }
         }
 
         public IFeature GetFeatureFromLayer(string aFeatureLayer, string aQuery, string aLogFile = "", bool Messages = false)
@@ -2959,7 +3028,7 @@ namespace HLArcMapModule
                 // Does the area field already exist? If not, add it.
                 if (!FieldExists(pFC, "Area", aLogFile, Messages))
                 {
-                    AddField(pFC, "Area", esriFieldType.esriFieldTypeDouble, 20, aLogFile, Messages);
+                    AddField(ref pFC, "Area", esriFieldType.esriFieldTypeDouble, 20, aLogFile, Messages);
                     blAreaAdded = true;
                 }
                 // Calculate the field.
@@ -3215,7 +3284,7 @@ namespace HLArcMapModule
             // Include radius if requested
             if (aRadius != "none")
             {
-                AddField(pResultFC, "Radius", esriFieldType.esriFieldTypeString, 25, aLogFile, Messages);
+                AddField(ref pResultFC, "Radius", esriFieldType.esriFieldTypeString, 25, aLogFile, Messages);
                 CalculateField(anOutShapefile, "Radius", '"' + aRadius + '"', aLogFile, Messages);
             }
 
@@ -3315,7 +3384,7 @@ namespace HLArcMapModule
                 // Does the area field already exist? If not, add it.
                 if (!FieldExists(pFC, "Area", aLogFile, Messages))
                 {
-                    AddField(pFC, "Area", esriFieldType.esriFieldTypeDouble, 20, aLogFile, Messages);
+                    AddField(ref pFC, "Area", esriFieldType.esriFieldTypeDouble, 20, aLogFile, Messages);
                     blAreaAdded = true;
                 }
                 // Calculate the field.
@@ -3911,6 +3980,70 @@ namespace HLArcMapModule
             return intMax; // Return the maximum value for info.
         }
 
+        public int AddIncrementalNumbers(string aFeatureClass, string aFieldName, int aStartNumber = 1, string aLogFile = "", bool Messages = false)
+        {
+            // a version of the above without the use of a key field.
+
+            // Check the obvious.
+            if (!FeatureclassExists(aFeatureClass))
+            {
+                if (Messages)
+                    MessageBox.Show("The featureclass " + aFeatureClass + " doesn't exist");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function AddIncrementalNumbers returned the following error: The featureclass " + aFeatureClass + " doesn't exist");
+                return -1;
+            }
+
+            if (!FieldExists(aFeatureClass, aFieldName))
+            {
+                if (Messages)
+                    MessageBox.Show("The field " + aFieldName + " does not exist in featureclass " + aFeatureClass);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function AddIncrementalNumbers returned the following error: The field " + aFieldName + " doesn't exist in feature class " + aFeatureClass);
+                return -1;
+            }
+
+            if (!FieldIsNumeric(aFeatureClass, aFieldName))
+            {
+                if (Messages)
+                    MessageBox.Show("The field " + aFieldName + " is not numeric");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function AddIncrementalNumbers returned the following error: The field " + aFieldName + " is not numeric");
+                return -1;
+            }
+
+            IFeatureClass pFC = GetFeatureClass(aFeatureClass);
+
+            // Now do the update.
+            int intValue = aStartNumber;
+            int intFieldIndex = pFC.FindField(aFieldName);
+            IFeature feature = null; // Not sure why this is showing in orange??
+            IFeatureCursor pUpdateCurs = pFC.Update(null, false); // Get the whole thing.
+            try
+            {
+                while ((feature = pUpdateCurs.NextFeature()) != null)
+                {
+                    feature.set_Value(intFieldIndex, intValue);
+                    pUpdateCurs.UpdateFeature(feature);
+                    intValue++;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                    MessageBox.Show("Error: " + ex.Message, "Error");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function AddIncrementalNumbers returned the following error: " + ex.Message);
+                Marshal.ReleaseComObject(pUpdateCurs);
+                return -1;
+            }
+
+            // If the cursor is no longer needed, release it.
+            Marshal.ReleaseComObject(pUpdateCurs);
+            pUpdateCurs = null;
+            return intValue - 1 ; // Return the maximum value for info.
+        }
+
         public void ToggleDrawing(bool AllowDrawing)
         {
             IMxApplication2 thisApp = (IMxApplication2)thisApplication;
@@ -3944,6 +4077,16 @@ namespace HLArcMapModule
             IContentsView pCV = mxDoc.get_ContentsView(0);
             mxDoc.CurrentContentsView = pCV;
 
+        }
+
+        public void ReleaseAllCOMObjects()
+        {
+            int RefsLeft = 0;
+            do
+            {
+                RefsLeft = Marshal.ReleaseComObject(thisApplication);
+            }
+            while (RefsLeft > 0);
         }
 
     }

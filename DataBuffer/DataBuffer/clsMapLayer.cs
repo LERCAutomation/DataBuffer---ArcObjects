@@ -11,7 +11,8 @@ namespace DataBuffer
     {
         public string DisplayName { get; set; } // The name on the tool menu
         public string LayerName { get; set; } // the name in the TOC
-        public string Columns { get; set; }
+        public InputColumns InputColumns { get; set; }
+        //public string Columns { get; set; }
         public string WhereClause { get; set; }
         public string SortOrder { get; set; }
         public int BufferSize { get; set; }
@@ -27,7 +28,6 @@ namespace DataBuffer
 
     public class MapLayers : IEnumerable
     {
-        //private MapLayer[] _layers;
         private List<MapLayer> _layers;
         
         public MapLayers(MapLayer[] pArray = null) //
@@ -37,7 +37,6 @@ namespace DataBuffer
             {
                 for (int i = 0; i < pArray.Length; i++)
                 {
-                    //_layers[i] = pArray[i];
                     _layers.Add(pArray[i]);
                 }
             }
@@ -86,6 +85,59 @@ namespace DataBuffer
 
         public OutputLayer()
         {
+        }
+    }
+
+    public class InputColumn
+    {
+        public string InputName { get; set; }
+        public string OutputName { get; set; }
+        public string ColumnType { get; set; } // cluster, common, range etc.
+    }
+
+    public class InputColumns : IEnumerable
+    {
+        private List<InputColumn> _inputcolumns;
+        public InputColumns(InputColumn[] pArray = null) // Constructor. We could use a list as input, too.
+        {
+            _inputcolumns = new List<InputColumn>();
+            if (pArray != null)
+            {
+                for (int i = 0; i < pArray.Length; i++)
+                {
+                    _inputcolumns.Add(pArray[i]);
+                }
+
+            }
+        }
+
+        // Implement GetEnumerator
+        public IEnumerator<InputColumn> GetEnumerator()
+        {
+            foreach (InputColumn aColumn in _inputcolumns)
+            {
+                if (aColumn == null)
+                {
+                    break;
+                }
+                // Return the item
+                yield return aColumn;
+            }
+        }
+
+        // Add method.
+        public void Add(InputColumn anInputColumn)
+        {
+            if (anInputColumn != null)
+            {
+                _inputcolumns.Add(anInputColumn);
+            }
+        }
+
+        // Implementation of generic GetEnumerator
+        IEnumerator IEnumerable.GetEnumerator() //public
+        {
+            return this.GetEnumerator();
         }
     }
 

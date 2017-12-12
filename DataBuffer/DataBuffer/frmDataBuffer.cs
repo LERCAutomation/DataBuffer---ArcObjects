@@ -70,7 +70,7 @@ namespace DataBuffer
             List<string> MissingLayerList = new List<string>();
             foreach (MapLayer aLayer in theInputLayers)
             {
-                if (!myArcMapFuncs.LayerExists(aLayer.LayerName) && !myArcMapFuncs.GroupLayerExists(aLayer.LayerName)) // There's a good chance it's kept in a group
+                if (!myArcMapFuncs.LayerExists(aLayer.LayerName)) // We do not accept group layers.
                     MissingLayerList.Add(aLayer.LayerName);
                 else
                     lstInput.Items.Add(aLayer.DisplayName);
@@ -92,7 +92,10 @@ namespace DataBuffer
                     strMessage = strMessage.Substring(0, strMessage.Length - 2) + "."; // Trim the last comma and space; add a full stop.
                 }
                 MessageBox.Show(strMessage, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }         
+            }   
+      
+            // Set the default for clear log file.
+            chkClearLog.Checked = myConfig.DefaultClearLog;
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -155,7 +158,9 @@ namespace DataBuffer
                     return;
                 }
             }
-            
+
+            myArcMapFuncs.ToggleDrawing(false);
+            myArcMapFuncs.ToggleTOC(false);
 
             // Find the selected map layers.
             MapLayers Selectedlayers = new MapLayers();
@@ -212,6 +217,8 @@ namespace DataBuffer
             // Any required tidying up.
             Selectedlayers = null;
             AllMapLayers = null;
+            myArcMapFuncs.ToggleDrawing(true);
+            myArcMapFuncs.ToggleTOC(true);
         }
 
         private void button1_Click(object sender, EventArgs e)

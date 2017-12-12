@@ -39,9 +39,13 @@ layers.
 	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\Data</value>
   </DefaultPath>
 
-  <LayerFolder>
+  <TempFilePath>
+  	<value>C:\Temp</value>
+  </TempFilePath>
+
+  <LayerPath>
   	<value>c:\aTest</value>
-  </LayerFolder>
+  </LayerPath>
 
   <!--The coordinate system for output -->
   <CoordinateSystem>
@@ -52,8 +56,8 @@ layers.
   <!-- The names and local names of the GIS layers to be processed -->
   <InLayers>
 	<Badgers>
-		<LayerName>
-			<Value>Badgers</Value>
+		<LayerName> <!-- Case sensitive! -->
+			<Value>Badgers_Point</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
@@ -68,7 +72,7 @@ layers.
 			<Value>100</Value>
 		</BufferSize>
 		<DissolveSize>
-			<Value>0</Value>
+			<Value>100</Value>
 		</DissolveSize>
 	</Badgers>
 	<BarnOwls>
@@ -175,8 +179,8 @@ layers.
 		<LayerName>
 			<Value>Water_Voles_Rivers</Value>
 		</LayerName>
-		<Columns>
-			<Value>Common_Name "CommonName", Scientific_Name "SciName", Year "RecYear", GridRef, Location, UK_Legislation + ", " + Priority_NERC_S41 "Design", Version_Date "Version", Data_Origin "Origin", "TVERC" "Provider", "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+		<Columns> <!-- Please do not use commas in your strings -->
+			<Value>Common_Name "CommonName", Scientific_Name "SciName", Year "RecYear", GridRef, Location, "UK_Legislation; Priority_NERC_S41" "Design", Version_Date "Version", Data_Origin "Origin", "TVERC" "Provider", "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
 		</Columns>
 		<WhereClause>
 			<value>Year &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
@@ -220,7 +224,6 @@ layers.
 			<ColumnLength>
 				<value>100</value>
 			</ColumnLength>
-
 		</Col1>
 		<Col2>
 			<ColumnName>
