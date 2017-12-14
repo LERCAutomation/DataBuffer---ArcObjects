@@ -12,7 +12,6 @@ namespace DataBuffer
         public string DisplayName { get; set; } // The name on the tool menu
         public string LayerName { get; set; } // the name in the TOC
         public InputColumns InputColumns { get; set; }
-        //public string Columns { get; set; }
         public string WhereClause { get; set; }
         public string SortOrder { get; set; }
         public int BufferSize { get; set; }
@@ -93,6 +92,8 @@ namespace DataBuffer
         public string InputName { get; set; }
         public string OutputName { get; set; }
         public string ColumnType { get; set; } // cluster, common, range etc.
+        public string FieldType { get; set; } // int, double, text etc.
+        public int FieldLength { get; set; }
     }
 
     public class InputColumns : IEnumerable

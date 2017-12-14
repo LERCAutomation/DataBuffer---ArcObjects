@@ -482,6 +482,29 @@ namespace HLDataBufferConfig
                         if (FieldTypes.Contains(strRawText))
                         {
                             thisColumn.FieldType = strRawText; // Always upper case.
+
+                            // Now also add this type to the relevant output column in ALL the input layers.
+                            foreach (MapLayer aLayer in inputLayers)
+                            {
+                                // Find the output column with the same name.
+                                bool blFoundIt = false;
+                                foreach (InputColumn aColumn in aLayer.InputColumns)
+                                {
+                                    if (aColumn.OutputName == thisColumn.ColumnName)
+                                    {
+                                        aColumn.FieldType = strRawText;
+                                        blFoundIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!blFoundIt)
+                                {
+                                    MessageBox.Show("The output column " + thisColumn.ColumnName + " was not found for map layer " + aLayer.LayerName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    loadedXML = false;
+                                    return;
+                                }
+                            }
+
                         }
                         else
                         {
@@ -502,7 +525,31 @@ namespace HLDataBufferConfig
                         int a;
                         bool blResult = int.TryParse(aNode["ColumnLength"].InnerText, out a);
                         if (blResult)
+                        {
                             thisColumn.ColumnLength = a;
+
+                            // Now also add this length to the relevant output column in ALL the input layers.
+                            foreach (MapLayer aLayer in inputLayers)
+                            {
+                                // Find the output column with the same name.
+                                bool blFoundIt = false;
+                                foreach (InputColumn aColumn in aLayer.InputColumns)
+                                {
+                                    if (aColumn.OutputName == thisColumn.ColumnName)
+                                    {
+                                        aColumn.FieldLength = a;
+                                        blFoundIt = true;
+                                        break;
+                                    }
+                                }
+                                if (!blFoundIt)
+                                {
+                                    MessageBox.Show("The output column " + thisColumn.ColumnName + " was not found for map layer " + aLayer.LayerName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    loadedXML = false;
+                                    return;
+                                }
+                            }
+                        }
                         else
                         {
                             MessageBox.Show("Could not locate the item 'ColumnLength' for map layer " + thisColumn.ColumnTag + " in the XML file, or the item is not an integer", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);

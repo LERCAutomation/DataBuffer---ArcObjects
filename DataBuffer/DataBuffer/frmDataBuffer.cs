@@ -225,5 +225,11 @@ namespace DataBuffer
         {
             this.Close();
         }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            myArcMapFuncs.SetMostCommon("FinalRawBuffered", "ClusterID", new List<string>() { "GridRef", "Origin" }, "TempRaw", new List<string>() { "GridRef", "Origin" });
+            MessageBox.Show("Finished");
+        }
     }
 }
