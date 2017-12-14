@@ -2155,7 +2155,111 @@ namespace HLArcMapModule
             myWin.Show(true);
         }
 
-        public bool BufferFeatures(string aLayer, string anOutputName, string aBufferDistance, string AggregateFields, string DissolveOption="NONE", string aLogFile = "", bool Overwrite = true, bool Messages = false)
+        public bool SpatialJoin(string anInputLayer, string aJoinLayer, string anOutputName, string aJoinOperation="JOIN_ONE_TO_MANY", string aJoinType="KEEP_ALL", string aMatchMethod="CLOSEST", string aLogFile = "", bool Overwrite = true, bool Messages = false)
+        {
+            // Joins aJoinLayer onto anInputLayer and writes the output to anOutputLayer.
+            // Note this does not implement some of the more advanced features of Spatial Join.
+            // Firstly check if the output feature exists.
+            if (FeatureclassExists(anOutputName))
+            {
+                if (!Overwrite)
+                {
+                    if (Messages)
+                        MessageBox.Show("The feature class " + anOutputName + " already exists. Cannot overwrite");
+                    if (aLogFile != "")
+                        myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned: The feature class " + anOutputName + " already exists. Cannot overwrite");
+                    return false;
+                }
+            }
+            if (!LayerExists(anInputLayer))
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + anInputLayer + " does not exist in the map");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The SpatialJoin function returned the following error: The layer " + anInputLayer + " does not exist in the map");
+                return false;
+            }
+            if (!LayerExists(aJoinLayer))
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aJoinLayer + " does not exist in the map");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The SpatialJoin function returned the following error: The layer " + aJoinLayer + " does not exist in the map");
+                return false;
+            }
+            
+            ILayer pLayer = GetLayer(anInputLayer);
+            try
+            {
+                IFeatureLayer pTest = (IFeatureLayer)pLayer;
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + anInputLayer + " is not a feature layer");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The SpatialJoin function returned the following error: The layer " + anInputLayer + " is not a feature layer");
+                return false;
+            }
+
+            pLayer = GetLayer(aJoinLayer);
+            try
+            {
+                IFeatureLayer pTest = (IFeatureLayer)pLayer;
+            }
+            catch
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aJoinLayer + " is not a feature layer");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "The SpatialJoin function returned the following error: The layer " + aJoinLayer + " is not a feature layer");
+                return false;
+            }
+
+            // Set up the geoprocessor.
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = Overwrite;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(anInputLayer);
+            parameters.Add(aJoinLayer);
+            parameters.Add(anOutputName);
+            parameters.Add(aJoinOperation);
+            parameters.Add(aJoinType);
+            parameters.Add("");
+            parameters.Add(aMatchMethod);
+            // No field mapping, match option, search radius or distance field name. May be added!
+
+            // Do the join operation.
+            bool blResult = false;
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("SpatialJoin_analysis", parameters, null);
+
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "While buffering the BufferFeature function returned the following error: " + ex.Message);
+            }
+            // Tidy up
+            gp = null;
+            parameters = null;
+            return blResult;
+        }
+
+        public bool BufferFeatures(string aLayer, string anOutputName, string aBufferDistance, string AggregateFields="", string DissolveOption="NONE", string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
             // Firstly check if the output feature exists.
             if (FeatureclassExists(anOutputName))
@@ -2210,13 +2314,6 @@ namespace HLArcMapModule
                     AggregateFields = AggregateFields + strField + ";";
                 }
             }
-            string strDissolveOption = "ALL";
-            if (AggregateFields != "")
-            {
-                AggregateFields = AggregateFields.Substring(0, AggregateFields.Length - 1);
-                strDissolveOption = "LIST";
-            }
-
 
             // a different approach using the geoprocessor object.
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
@@ -2233,7 +2330,7 @@ namespace HLArcMapModule
             parameters.Add(aBufferDistance);
             parameters.Add("FULL");
             parameters.Add("ROUND");
-            parameters.Add(strDissolveOption);
+            parameters.Add(DissolveOption);
             if (AggregateFields != "")
                 parameters.Add(AggregateFields);
 
@@ -2270,7 +2367,7 @@ namespace HLArcMapModule
                     if (Messages)
                         MessageBox.Show("The feature class " + anOutputName + " already exists. Cannot overwrite");
                     if (aLogFile != "")
-                        myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned: The feature class " + anOutputName + " already exists. Cannot overwrite");
+                        myFileFuncs.WriteLine(aLogFile, "The DissolveFeature function returned: The feature class " + anOutputName + " already exists. Cannot overwrite");
                     return false;
                 }
             }
@@ -2279,7 +2376,7 @@ namespace HLArcMapModule
                 if (Messages)
                     MessageBox.Show("The layer " + aLayer + " does not exist in the map");
                 if (aLogFile != "")
-                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " does not exist in the map");
+                    myFileFuncs.WriteLine(aLogFile, "The DissolveFeature function returned the following error: The layer " + aLayer + " does not exist in the map");
                 return false;
             }
 
@@ -2288,24 +2385,65 @@ namespace HLArcMapModule
                 if (Messages)
                     MessageBox.Show("The layer " + aLayer + " is a group layer and cannot be buffered.");
                 if (aLogFile != "")
-                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " is a group layer and cannot be buffered");
+                    myFileFuncs.WriteLine(aLogFile, "The DissolveFeature function returned the following error: The layer " + aLayer + " is a group layer and cannot be buffered");
                 return false;
             }
             ILayer pLayer = GetLayer(aLayer);
             try
             {
                 IFeatureLayer pTest = (IFeatureLayer)pLayer;
+                pTest = null; // either it worked or it's already fallen over.
             }
             catch
             {
                 if (Messages)
                     MessageBox.Show("The layer " + aLayer + " is not a feature layer");
                 if (aLogFile != "")
-                    myFileFuncs.WriteLine(aLogFile, "The BufferFeature function returned the following error: The layer " + aLayer + " is not a feature layer");
+                    myFileFuncs.WriteLine(aLogFile, "The DissolveFeature function returned the following error: The layer " + aLayer + " is not a feature layer");
+                pLayer = null;
                 return false;
             }
+            pLayer = null;
 
-            return true;
+            // Set up the geoprocessor.
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = Overwrite;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(aLayer);
+            parameters.Add(anOutputName);
+            parameters.Add(aDissolveFieldList);
+            parameters.Add(aStatisticsList);
+            parameters.Add(aDissolveType);
+
+
+            // Do the dissolve operation.
+            bool blResult = false;
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("Dissolve_management", parameters, null);
+
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "While dissolving the Dissolve function returned the following error: " + ex.Message);
+            }
+            // Tidy up
+            gp = null;
+            parameters = null;
+            return blResult;
         }
 
         public IFeatureClass CreateFeatureClass(String featureClassName, string featureWorkspaceName, esriGeometryType aGeometryType, string aLogFile = "", bool Overwrite = true, bool Messages = false, esriSRGeoCSType aSpatialReferenceSystem = esriSRGeoCSType.esriSRGeoCS_OSGB1936)
@@ -2911,22 +3049,8 @@ namespace HLArcMapModule
 
         public bool CalculateField(string aLayerName, string aFieldName, string aCalculate, string aLogFile = "", bool Messages = false)
         {
-            //if (!LayerExists(aLayerName, aLogFile, Messages))
-            //{
-            //    if (Messages) MessageBox.Show("The layer " + aLayerName + " does not exist in the map", "Calculate Field");
-            //    if (aLogFile != "")
-            //        myFileFuncs.WriteLine(aLogFile, "Function CalculateField returned the following error: Layer " + aLayerName + " does not exist in the map");
-            //    return false;
-            //}
-
-            //ILayer pLayer = GetLayer(aLayerName, aLogFile, Messages);
-            //if (!FieldExists(pLayer, aFieldName, aLogFile, Messages))
-            //{
-            //    if (Messages) MessageBox.Show("The field " + aFieldName + " does not exist in layer " + aLayerName, "Calculate Field");
-            //    if (aLogFile != "")
-            //        myFileFuncs.WriteLine(aLogFile, "Function CalculateField returned the following error: Field " + aFieldName + " does not exist in layer " + aLayerName);
-            //    return false;
-            //}
+            // This takes both layers and FCs which is why I've skipped the error checking
+            // tut, tut.
 
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
 
@@ -2965,6 +3089,156 @@ namespace HLArcMapModule
                 gp = null;
                 return false;
             }
+        }
+
+        public bool AddJoin(string aTargetLayer, string aTargetField, string aJoinTable, string aJoinField, string aLogFile = "", bool Messages = false)
+        {
+            // Takes both FC and Layer which is why we're limited in our error checking.
+            if (!LayerExists(aTargetLayer) && !FeatureclassExists(aTargetLayer) && !TableExists(aTargetLayer))
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The layer or feature class " + aTargetLayer + " does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                if (aLogFile != "")
+                {
+                    myFileFuncs.WriteLine(aLogFile, "Function AddJoin returned the following error: The layer or feature class " + aTargetLayer + " does not exist.");
+                }
+                return false;
+            }
+
+            if (!LayerExists(aJoinTable) && !FeatureclassExists(aJoinTable) && !TableExists(aJoinTable))
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The layer or feature class " + aJoinTable + " does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                if (aLogFile != "")
+                {
+                    myFileFuncs.WriteLine(aLogFile, "Function AddJoin returned the following error: The layer or feature class " + aJoinTable + " does not exist.");
+                }
+                return false;
+            }
+
+            // We have to assume that the field exists.
+
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+            object sev = null;
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(aTargetLayer);
+            parameters.Add(aTargetField);
+            parameters.Add(aJoinTable);
+            parameters.Add(aJoinField);
+
+            // Execute the tool.
+            bool blResult = false;
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("AddJoin_management", parameters, null);
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                if (Messages)
+                {
+                    MessageBox.Show("Process complete");
+                }
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                    if (aLogFile != "")
+                    {
+                        myFileFuncs.WriteLine(aLogFile, "Function AddJoin returned the following errors: " + ex.Message);
+                        myFileFuncs.WriteLine(aLogFile, "Geoprocessor error: " + gp.GetMessages(ref sev));
+                    }
+
+                }
+            }
+            finally
+            {
+                gp = null;
+                myresult = null;
+                sev = null;
+                parameters = null;
+            }
+            return blResult;
+        }
+
+        public bool RemoveJoin(string aLayer, string aLogFile = "", bool Messages = false)
+        {
+            // Takes both FC and Layer which is why we're limited in our error checking.
+            if (!LayerExists(aLayer) && !FeatureclassExists(aLayer) && !TableExists(aLayer))
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The layer or feature class " + aLayer + " does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                if (aLogFile != "")
+                {
+                    myFileFuncs.WriteLine(aLogFile, "Function RemoveJoin returned the following error: The layer or feature class " + aLayer + " does not exist.");
+                }
+                return false;
+            }
+
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+            object sev = null;
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(aLayer);
+
+            // Execute the tool.
+            bool blResult = false;
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("RemoveJoin_management", parameters, null);
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                if (Messages)
+                {
+                    MessageBox.Show("Process complete");
+                }
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                    if (aLogFile != "")
+                    {
+                        myFileFuncs.WriteLine(aLogFile, "Function AddJoin returned the following errors: " + ex.Message);
+                        myFileFuncs.WriteLine(aLogFile, "Geoprocessor error: " + gp.GetMessages(ref sev));
+                    }
+
+                }
+            }
+            finally
+            {
+                gp = null;
+                myresult = null;
+                sev = null;
+                parameters = null;
+            }
+            return blResult;
         }
 
         public bool ExportSelectionToShapefile(string aLayerName, string anOutShapefile, string OutputColumns, string TempShapeFile, string GroupColumns = "",

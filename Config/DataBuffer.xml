@@ -57,7 +57,7 @@ layers.
   <InLayers>
 	<Badgers>
 		<LayerName> <!-- Case sensitive! -->
-			<Value>Badgers_Point</Value>
+			<Value>Badgers</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
@@ -77,7 +77,7 @@ layers.
 	</Badgers>
 	<BarnOwls>
 		<LayerName>
-			<Value>BarnOwls</Value>
+			<Value>Barn_Owls</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
