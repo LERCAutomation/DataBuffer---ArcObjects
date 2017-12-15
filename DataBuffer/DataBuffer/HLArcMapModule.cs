@@ -449,6 +449,7 @@ namespace HLArcMapModule
             return pTargetLayer;
         }
 
+        #region FieldExists
         public bool FieldExists(string aFilePath, string aDatasetName, string aFieldName, string aLogFile = "", bool Messages = false)
         {
             // This function returns true if a field (or a field alias) exists, false if it doesn (or the dataset doesn't)
@@ -501,11 +502,21 @@ namespace HLArcMapModule
             return true;
         }
 
-        public bool FieldExists(string aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        public bool FieldExists(string aFeatureClassOrLayer, string aFieldName, string aLogFile = "", bool Messages = false)
         {
-            string aFilePath = myFileFuncs.GetDirectoryName(aFeatureClass);
-            string aDatasetName = myFileFuncs.GetFileName(aFeatureClass);
-            return FieldExists(aFilePath, aDatasetName, aFieldName, aLogFile, Messages);
+            if (FeatureclassExists(aFeatureClassOrLayer))
+            {
+                string aFilePath = myFileFuncs.GetDirectoryName(aFeatureClassOrLayer);
+                string aDatasetName = myFileFuncs.GetFileName(aFeatureClassOrLayer);
+                return FieldExists(aFilePath, aDatasetName, aFieldName, aLogFile, Messages);
+            }
+            else if (LayerExists(aFeatureClassOrLayer))
+            {
+                ILayer pLayer = GetLayer(aFeatureClassOrLayer);
+                return FieldExists(pLayer, aFieldName, aLogFile, Messages);
+            }
+            else
+                return false;
         }
 
         public bool FieldExists(ILayer aLayer, string aFieldName, string aLogFile = "", bool Messages = false)
@@ -525,6 +536,73 @@ namespace HLArcMapModule
             }
             IFeatureClass pFC = pFL.FeatureClass;
             return FieldExists(pFC, aFieldName);
+        }
+        #endregion
+
+        public bool CheckFieldType(string aLayerOrFeatureClass, string aFieldName, string anExpectedType, string aLogFile = "", bool Messages = false)
+        {
+            // The following field types are recognised:
+            // TEXT, FLOAT, DOUBLE, SHORT, LONG, DATE.
+            bool blResult = false;
+            IFeatureClass aFC = null;
+            if (LayerExists(aLayerOrFeatureClass))
+                aFC = GetFeatureClassFromLayerName(aLayerOrFeatureClass);
+            else if (FeatureclassExists(aLayerOrFeatureClass))
+                aFC = GetFeatureClass(aLayerOrFeatureClass);
+            else
+            {
+                if (Messages) MessageBox.Show("The featureclass or layer " + aLayerOrFeatureClass + " doesn't exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "Function CheckFieldType returned the following error: The featureclass or layer " + aLayerOrFeatureClass + " doesn't exist.");
+                return blResult;
+            }
+            IField aField = GetFCField(aFC, aFieldName, aLogFile, Messages);
+            if (aField == null)
+            {
+                if (Messages) MessageBox.Show("The field " + aFieldName + " doesn't exist in " + aLayerOrFeatureClass, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "Function CheckFieldType returned the following error: The field " + aFieldName + " doesn't exist in " + aLayerOrFeatureClass + ".");
+                return blResult;
+            }
+            // 
+            switch (anExpectedType)
+            {
+                case "TEXT":
+                    if (aField.Type == esriFieldType.esriFieldTypeString)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;
+                case "FLOAT":
+                    if (aField.Type == esriFieldType.esriFieldTypeSingle)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;
+                case "DOUBLE":
+                    if (aField.Type == esriFieldType.esriFieldTypeDouble)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;  
+                case "SHORT":
+                    if (aField.Type == esriFieldType.esriFieldTypeSmallInteger)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;
+                case "LONG":
+                    if (aField.Type == esriFieldType.esriFieldTypeInteger)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;
+                case "DATE":
+                    if (aField.Type == esriFieldType.esriFieldTypeDate)
+                        blResult = true;
+                    else
+                        blResult = false;
+                    break;
+            }
+            return blResult;
         }
 
         public bool FieldIsNumeric(string aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
@@ -566,6 +644,7 @@ namespace HLArcMapModule
 
         }
 
+        #region AddField
         public bool AddField(ref IFeatureClass aFeatureClass, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
         {
             // Validate input.
@@ -654,6 +733,7 @@ namespace HLArcMapModule
             EsriTypes = null;
             return blResult;
         }
+        #endregion
 
         public bool AddLayerField(string aLayer, string aFieldName, esriFieldType aFieldType, int aLength, string aLogFile = "", bool Messages = false)
         {
@@ -746,6 +826,68 @@ namespace HLArcMapModule
             }
         }
 
+        public bool CreateIndex(string aLayerOrFeatureClass, string IndexFields, string IndexName, string aLogFile = "", bool Messages = false)
+        {
+            bool blResult = false;
+            if (!LayerOrFeatureclassExists(aLayerOrFeatureClass))
+            {
+                if (Messages) MessageBox.Show("Layer or feature class " + aLayerOrFeatureClass + " doesn't exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function CreateIndex returned the following error: Layer or feature class " + aLayerOrFeatureClass + " doesn't exist.");
+                return blResult;
+            }
+
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+            object sev = null;
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+            // Populate the variant array with parameter values.
+            parameters.Add(aLayerOrFeatureClass);
+            parameters.Add(IndexFields);
+            parameters.Add(IndexName);
+
+            // Execute the tool.
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("AddIndex_management", parameters, null);
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                if (Messages)
+                {
+                    MessageBox.Show("Process complete");
+                }
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                    if (aLogFile != "")
+                    {
+                        myFileFuncs.WriteLine(aLogFile, "Function CreateIndex returned the following errors: " + ex.Message);
+                        myFileFuncs.WriteLine(aLogFile, "Geoprocessor error: " + gp.GetMessages(ref sev));
+                    }
+
+                }
+            }
+            finally
+            {
+                gp = null;
+                myresult = null;
+                sev = null;
+                parameters = null;
+            }
+            return blResult;
+        }
+        
         public bool AddLayerFromFClass(IFeatureClass theFeatureClass, string aLogFile = "", bool Messages = false)
         {
             // Check we have input
@@ -1267,7 +1409,6 @@ namespace HLArcMapModule
             return theLayers;
         }
 
-
         public bool MoveToGroupLayer(string theGroupLayerName, ILayer aLayer, string aLogFile = "", bool Messages = false)
         {
             bool blExists = false;
@@ -1422,7 +1563,6 @@ namespace HLArcMapModule
         }
         #endregion
 
-
         public string GetOutputFileName(string aFileType, string anInitialDirectory = @"C:\")
         {
             // This would be done better with a custom type but this will do for the momment.
@@ -1485,37 +1625,16 @@ namespace HLArcMapModule
         public bool CopyFeatures(string InFeatureClassOrLayer, string OutFeatureClass, bool Overwrite = true, string aLogFile = "", bool Messages = false)
         {
             // This function can work on either feature classes or layers.
-            // The code below is commented out because it is currently meaningless - because the script accepts OutFeatureClass without an extension
-            // and the gp object decides whether it's a geodatabase or .shp output, the FeatureclassExists check is invalid. 
-            // The way to resolve this is to check what kind of workspace the OutFeatureClass is going to, which at the moment it's not doing brilliantly.
-            //if (!LayerExists(InFeatureClassOrLayer, aLogFile, Messages) && !FeatureclassExists(InFeatureClassOrLayer))
-            //{
-            //    if (Messages) MessageBox.Show("The layer or feature class " + InFeatureClassOrLayer + " doesn't exist", "Copy Features");
-            //    if (aLogFile != "")
-            //        myFileFuncs.WriteLine(aLogFile, "Function CopyFeatures returned the following error: The layer or feature class " + InFeatureClassOrLayer + " doesn't exist");
-            //    return false;
-            //}
+            bool blResult = false;
+            if (!LayerOrFeatureclassExists(InFeatureClassOrLayer))
+            {
+                if (Messages) MessageBox.Show("Layer or feature class " + InFeatureClassOrLayer + " doesn't exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function CreateIndex returned the following error: Layer or feature class " + InFeatureClassOrLayer + " doesn't exist.");
+                return blResult;
+            }
 
-            //if (!Overwrite && FeatureclassExists(OutFeatureClass))
-            //{
-            //    if (Messages) MessageBox.Show("Output dataset " + OutFeatureClass + " already exists. Cannot overwrite.", "Copy Features");
-            //    if (aLogFile != "")
-            //        myFileFuncs.WriteLine(aLogFile, "Function CopyFeatures returned the following error: Output dataset " + OutFeatureClass + " already exists. Cannot overwrite");
-            //    return false;
-            //}
-
-            //if (FeatureclassExists(OutFeatureClass))
-            //{
-            //    bool blTest = DeleteFeatureclass(OutFeatureClass, aLogFile, Messages);
-            //    if (!blTest)
-            //    {
-            //        if (Messages) MessageBox.Show("Cannot delete the existing output dataset " + OutFeatureClass, "Copy Features");
-            //        if (aLogFile != "")
-            //            myFileFuncs.WriteLine(aLogFile, "Function CopyFeatures returned the following error: Cannot delete the existing output dataset " + OutFeatureClass);
-            //        return false;
-            //    }
-            //}
-
+            
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
@@ -1540,6 +1659,7 @@ namespace HLArcMapModule
                 {
                     MessageBox.Show("Process complete");
                 }
+                blResult = true;
             }
             catch (Exception ex)
             {
@@ -1554,7 +1674,6 @@ namespace HLArcMapModule
                     }
 
                 }
-                return false;
             }
             finally
             {
@@ -1563,7 +1682,7 @@ namespace HLArcMapModule
                 sev = null;
                 parameters = null;
             }
-            return true;
+            return blResult;
         }
 
         public bool CopyFeatures(string InWorkspace, string InDatasetName, string OutFeatureClass, bool Overwrite = true, string aLogFile = "", bool Messages = false)
@@ -1845,16 +1964,15 @@ namespace HLArcMapModule
             }
         }
 
-        public IField GetFCField(string InputDirectory, string FeatureclassName, string FieldName, string aLogFile = "", bool Messages = false)
+        public IField GetFCField(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
         {
-            IFeatureClass featureClass = GetFeatureClass(InputDirectory, FeatureclassName, aLogFile, Messages);
             // Find the index of the requested field.
-            int fieldIndex = featureClass.FindField(FieldName);
+            int fieldIndex = aFeatureClass.FindField(aFieldName);
 
             // Get the field from the feature class's fields collection.
             if (fieldIndex > -1)
             {
-                IFields fields = featureClass.Fields;
+                IFields fields = aFeatureClass.Fields;
                 IField field = fields.get_Field(fieldIndex);
                 return field;
             }
@@ -1862,12 +1980,18 @@ namespace HLArcMapModule
             {
                 if (Messages)
                 {
-                    MessageBox.Show("The field " + FieldName + " was not found in the featureclass " + FeatureclassName);
+                    MessageBox.Show("The field " + aFieldName + " was not found in the featureclass ");
                 }
                 if (aLogFile != "")
-                    myFileFuncs.WriteLine(aLogFile, "Function GetFCField returned the following error: The field " + FieldName + " was not found in the featureclass " + FeatureclassName);
+                    myFileFuncs.WriteLine(aLogFile, "Function GetFCField returned the following error: The field " + aFieldName + " was not found in the featureclass " );
                 return null;
             }
+        }
+
+        public IField GetFCField(string InputDirectory, string FeatureclassName, string FieldName, string aLogFile = "", bool Messages = false)
+        {
+            IFeatureClass featureClass = GetFeatureClass(InputDirectory, FeatureclassName, aLogFile, Messages);
+            return GetFCField(featureClass, FieldName, aLogFile, Messages);
         }
 
         public IField GetFCField(string aFeatureClass, string FieldName, string aLogFile = "", bool Messages = false)
@@ -2429,7 +2553,7 @@ namespace HLArcMapModule
 
         }
 
-        public bool DissolveFeatures(string aLayer, string anOutputName, string aDissolveFieldList, string aStatisticsList, string aDissolveType = "SINGLE_PART", string aLogFile = "", bool Overwrite = true, bool Messages = false)
+        public bool DissolveFeatures(string aLayer, string anOutputName, string aDissolveFieldList, string aStatisticsList="", string aDissolveType = "SINGLE_PART", string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
 
             // Firstly check if the output feature exists.
@@ -2519,57 +2643,64 @@ namespace HLArcMapModule
             return blResult;
         }
 
-        public IFeatureClass CreateFeatureClass(String featureClassName, string featureWorkspaceName, esriGeometryType aGeometryType, string aLogFile = "", bool Overwrite = true, bool Messages = false, esriSRGeoCSType aSpatialReferenceSystem = esriSRGeoCSType.esriSRGeoCS_OSGB1936)
+        public bool CreateFeatureClassNew(string aWorkspaceName, string aFeatureClassName, string aGeometryType, string aTemplateLayer = "", string aSpatialReference = null, string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
-            if (FeatureclassExists(featureWorkspaceName, featureClassName) && !Overwrite)
+            // create a new FC based on a template layer (if given) using the spatial reference of aSpatialReference, which can also be a template layer.
+            bool blResult = false;
+            string aFullName = aWorkspaceName + @"\" + aFeatureClassName;
+            if (FeatureclassExists(aFullName))
             {
-                if (Messages) MessageBox.Show("Feature class " + featureClassName + " already exists in workspace " + featureWorkspaceName + ". Can't overwrite", " Create Feature Class");
-                if (aLogFile != "")
+                blResult = DeleteFeatureclass(aFullName);
+                if (!blResult)
                 {
-                    myFileFuncs.WriteLine(aLogFile, "Function CreateFeatureClass returned the following error: Feature class " + featureClassName + " already exists in workspace " + featureWorkspaceName + ". Can't overwrite");
+                    if (Messages) MessageBox.Show("Could not delete feature class " + aFullName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "Function CreateFeatureClass returned the following: Could not delete feature class " + aFullName + ". Continuing using Overwrite.");
+                    //return blResult; // couldn't delete it.
                 }
-                return null;
             }
 
-            IWorkspaceFactory pWSF = GetWorkspaceFactory(featureWorkspaceName);
-            IFeatureWorkspace featureWorkspace = (IFeatureWorkspace)pWSF.OpenFromFile(featureWorkspaceName, 0);
- 
-            // Assume we are always in Great Britain Grid.
-            ISpatialReferenceFactory spatialReferenceFactory = new SpatialReferenceEnvironmentClass();
-            ISpatialReference spatialReference = spatialReferenceFactory.CreateGeographicCoordinateSystem((int)aSpatialReferenceSystem);
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
 
-            // Instantiate a feature class description to get the required fields.
-            IFeatureClassDescription fcDescription = new FeatureClassDescriptionClass();
-            IObjectClassDescription ocDescription = (IObjectClassDescription)fcDescription;
-            IFields fields = ocDescription.RequiredFields;
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
 
-            // Find the shape field in the required fields and modify its GeometryDef to
-            // use relevant geometry and to set the spatial reference.
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
 
-            int shapeFieldIndex = fields.FindField(fcDescription.ShapeFieldName);
-            IField field = fields.get_Field(shapeFieldIndex);
-            IGeometryDef geometryDef = field.GeometryDef;
-            IGeometryDefEdit geometryDefEdit = (IGeometryDefEdit)geometryDef;
-            geometryDefEdit.GeometryType_2 = aGeometryType;
-            geometryDefEdit.SpatialReference_2 = spatialReference;
+            // Populate the variant array with parameter values.
+            parameters.Add(aWorkspaceName);
+            parameters.Add(aFeatureClassName);
+            parameters.Add(aGeometryType);
+            parameters.Add(aTemplateLayer);
+            if (aSpatialReference != "")
+            {
+                parameters.Add(""); // has_m
+                parameters.Add(""); // has_z
+                parameters.Add(aSpatialReference);
+            }
 
-            // In this example, only the required fields from the class description are used as fields
-            // for the feature class. If additional fields are added, IFieldChecker should be used to
-            // validate them.
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("CreateFeatureclass_management", parameters, null);
 
-            // Create the feature class.
-
-            IFeatureClass featureClass = featureWorkspace.CreateFeatureClass(featureClassName, fields,
-              ocDescription.InstanceCLSID, ocDescription.ClassExtensionCLSID, esriFeatureType.esriFTSimple,
-              fcDescription.ShapeFieldName, "");
-
-            Marshal.ReleaseComObject(featureWorkspace);
-            featureWorkspace = null;
-            pWSF = null;
-            GC.Collect();
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
                 
-            return featureClass;
-
+                blResult = true;
+            }
+            catch (Exception ex)
+            {
+                if (Messages)
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function CreateFeatureclass returned the following error: " + ex.Message);
+            }
+            gp = null;
+            parameters = null;
+            myresult = null;
+            return blResult;
         }
 
         public bool DeleteFeatureclass(string aFeatureclassName, string aLogFile = "", bool Messages = false)
@@ -4141,8 +4272,6 @@ namespace HLArcMapModule
             return true;
         }
 
-
-
         public void AnnotateLayer(string thisLayer, String LabelExpression, string aFont = "Arial",double aSize = 10, int Red = 0, int Green = 0, int Blue = 0, string OverlapOption = "OnePerShape", bool annotationsOn = true, bool showMapTips = false, string aLogFile = "", bool Messages = false)
         {
             // Options: OnePerShape, OnePerName, OnePerPart and NoRestriction.
@@ -4432,7 +4561,6 @@ namespace HLArcMapModule
             }
         }
 
-
         public void ToggleTOC(bool AllowTOC)
         {
             IApplication m_app = thisApplication;
@@ -4454,16 +4582,6 @@ namespace HLArcMapModule
             IContentsView pCV = mxDoc.get_ContentsView(0);
             mxDoc.CurrentContentsView = pCV;
 
-        }
-
-        public void ReleaseAllCOMObjects()
-        {
-            int RefsLeft = 0;
-            do
-            {
-                RefsLeft = Marshal.ReleaseComObject(thisApplication);
-            }
-            while (RefsLeft > 0);
         }
 
     }

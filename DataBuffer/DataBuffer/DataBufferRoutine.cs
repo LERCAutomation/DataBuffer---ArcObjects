@@ -34,7 +34,7 @@ namespace DataBuffer
             myFileFuncs = new FileFunctions();
         }
 
-        public long RunDataBuffer(string anOutputFile, string aLogFile)
+        public long RunDataBuffer(string anOutputFile, string aLogFile, frmDataBuffer callingForm)
         {
             // This uses the settings XML to retrieve the layerfolder MAYBE
             // so they do not need to be passed as a setting.
@@ -46,6 +46,8 @@ namespace DataBuffer
 
             long lngResult = 0; // The total number of rows written.
             bool blTest = false; // Testing variable.
+
+            callingForm.UpdateStatus("Starting process");
 
             // Check input. None of these should ever be fired.
             if (InputLayers == null)
@@ -93,6 +95,8 @@ namespace DataBuffer
             strMessage = strMessage.Substring(0, strMessage.Length - 2) + ".";
             myFileFuncs.WriteLine(strLogFile, strMessage);
 
+            callingForm.UpdateStatus("Creating output layer...", "Starting process");
+
             // 2. Create the empty output FC using correct definitions.
             string strOutFCName = myFileFuncs.GetFileName(anOutputFile);
             string strOutFolder = myFileFuncs.GetDirectoryName(anOutputFile);
@@ -130,7 +134,10 @@ namespace DataBuffer
 
 
             // 2b. Create the empty output FC
-            myArcMapFuncs.CreateFeatureClass(strOutFCName, strOutFolder, ESRI.ArcGIS.Geometry.esriGeometryType.esriGeometryPolygon, aLogFile);
+
+
+            callingForm.UpdateStatus(".");
+            myArcMapFuncs.CreateFeatureClassNew(strOutFolder, strOutFCName,"POLYGON", "", InputLayers.Get(0).LayerName, aLogFile);
             if (!myArcMapFuncs.FeatureclassExists(anOutputFile))
             {
                 myFileFuncs.WriteLine(strLogFile, "Could not create output feature class " + anOutputFile);
@@ -142,6 +149,7 @@ namespace DataBuffer
             // 2c. Add fields
             foreach (OutputColumn aCol in OutputLayer.OutputColumns)
             {
+                callingForm.UpdateStatus(".");
                 // The used version of AddField takes account of simple column types.
                 blTest = myArcMapFuncs.AddField(anOutputFile, aCol.ColumnName, aCol.FieldType, aCol.ColumnLength, aLogFile);
                 if (!blTest)
@@ -156,10 +164,37 @@ namespace DataBuffer
             // 3. For each input layer type (note we have points and polygons separate)
             foreach (MapLayer anInputLayer in InputLayers)
             {
+                callingForm.UpdateStatus("Checking input", "Processing " + anInputLayer.DisplayName);
+                
+                // Firstly let's check the promised input fields exist and is of the correct type.
+                foreach (InputColumn aCol in anInputLayer.InputColumns)
+                {
+                    callingForm.UpdateStatus(".");
+                    if (aCol.InputName.Substring(0, 1) != "\"")
+                    {
+                        if (!myArcMapFuncs.FieldExists(anInputLayer.LayerName, aCol.InputName, aLogFile: strLogFile))
+                        {
+                            myFileFuncs.WriteLine(strLogFile, "Cannot locate field " + aCol.InputName + " in layer " + anInputLayer.LayerName);
+                            MessageBox.Show("Field " + aCol.InputName + " does not exist in layer " + anInputLayer.LayerName);
+                            return lngResult;
+                        }
+                        else
+                        {
+                            if (!myArcMapFuncs.CheckFieldType(anInputLayer.LayerName, aCol.InputName, aCol.FieldType, strLogFile) && aCol.ColumnType != "range")
+                            {
+                                myFileFuncs.WriteLine(strLogFile, "The field " + aCol.InputName + " in layer " + anInputLayer.LayerName + " is not of type " + aCol.FieldType);
+                                MessageBox.Show("Wrong field type for field " + aCol.InputName + " in layer " + anInputLayer.LayerName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                    
+                }
+
                 string strTempRawLayer = "TempRaw";
                 string strTempRawPoints = strTempGDB + @"\" + strTempRawLayer; ; // The layer we're going to do the calculations on 
                 myFileFuncs.WriteLine(strLogFile, "Processing map layer " + anInputLayer.LayerName);
 
+                callingForm.UpdateStatus("Copying to temporary file");
                 // 1a. Clear any selected features; make new selection if necessary.
                 myArcMapFuncs.ClearSelectedMapFeatures(anInputLayer.LayerName);
                 if (anInputLayer.WhereClause != "")
@@ -187,6 +222,7 @@ namespace DataBuffer
 
                 // Copy the raw data (inc selection) to the temp directory
                 // 1b. Copy.
+                callingForm.UpdateStatus(".");
                 blTest = myArcMapFuncs.CopyFeatures(anInputLayer.LayerName, strTempRawPoints);
                 if (!blTest)
                 {
@@ -197,6 +233,7 @@ namespace DataBuffer
                 myFileFuncs.WriteLine(strLogFile, "Temporary feature class created.");
 
                 // 2. Assign unique IDs
+                callingForm.UpdateStatus(".");
                 string strUniqueField = "HL_ID";
                 blTest =  myArcMapFuncs.AddField(strTempRawPoints, strUniqueField, "LONG", 10, strLogFile);
                 if (!blTest)
@@ -213,9 +250,17 @@ namespace DataBuffer
                     return lngResult;
                 }
 
+                // Index the unique IDs
+                blTest = myArcMapFuncs.CreateIndex(strTempRawPoints, strUniqueField, "TempRawIndex", strLogFile);
+                if (!blTest) // Doesn't stop us carrying on.
+                {
+                    myFileFuncs.WriteLine(strLogFile, "WARNING: Could not add index to feature class " + strTempRawPoints + ". Process will be slow");
+                }
+
                 // FIRST OF ALL Work out what the clusters are. We do this for ALL CASES even if DissolveSize = 0.
                 string strClusterIDField = "ClusterID";
                 string strBuffOutput =  strTempRawPoints; // If we aren't dissolving on cluster, use the raw input.
+                callingForm.UpdateStatus(".");
                 if (anInputLayer.DissolveSize > 0)
                 {
                     // 1. Buffer the points/polys with the DissolveDistance. Ignore aggregate fields here as we want all overlaps.
@@ -237,6 +282,7 @@ namespace DataBuffer
                     myFileFuncs.WriteLine(strLogFile, "Clusters will be identified for records at the same location only");
                 }
                 // 2. Dissolve the resulting polygons on key fields and overlap
+                callingForm.UpdateStatus("Dissolving");
                 string strDissolveOutput = strTempGDB + @"\BuffDissolved";
                 string strFieldList = "";
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
@@ -247,6 +293,16 @@ namespace DataBuffer
                     }
                 }
                 strFieldList = strFieldList.Substring(0, strFieldList.Length - 1); // remove last ;
+
+                // Index the fields first
+                blTest = myArcMapFuncs.CreateIndex(strBuffOutput, strFieldList, "BuffOutputIndex", strLogFile);
+                if (!blTest) // Doesn't stop us carrying on.
+                {
+                    myFileFuncs.WriteLine(strLogFile, "WARNING: Could not add key field index to feature class " + strBuffOutput + ". Process will be slow");
+                }
+
+                // Do the dissolve
+                callingForm.UpdateStatus(".");
                 blTest = myArcMapFuncs.DissolveFeatures(myFileFuncs.GetFileName(strBuffOutput), strDissolveOutput, strFieldList, "", aLogFile: strLogFile);
                 if (!blTest)
                 {
@@ -256,6 +312,7 @@ namespace DataBuffer
                 }
 
                 // 3. Assign cluster IDs.
+                callingForm.UpdateStatus(".");
                 string strTempClusterIDField = "tClusterID";
                 blTest = myArcMapFuncs.AddField(strDissolveOutput,strTempClusterIDField, "LONG", 10, strLogFile);
                 if (!blTest)
@@ -273,8 +330,9 @@ namespace DataBuffer
                     return lngResult;
                 }
                 myFileFuncs.WriteLine(strLogFile, "Cluster numbers assigned.");
-                    
+
                 // 4. Add Cluster ID field to raw points.
+                callingForm.UpdateStatus(".");
                 blTest = myArcMapFuncs.AddField(strTempRawPoints, strClusterIDField, "LONG", 10, strLogFile);
                 if (!blTest)
                 {
@@ -284,8 +342,10 @@ namespace DataBuffer
                 }
 
                 // 5. Spatial join of the original points/polys back onto this layer. Note one-to-many join deals with overlaps.
+                callingForm.UpdateStatus("Calculating clusters");
+                
                 string strRawJoined = strTempGDB + @"\RawWithClusters";
-                blTest = myArcMapFuncs.SpatialJoin(myFileFuncs.GetFileName(strTempRawPoints), myFileFuncs.GetFileName(strDissolveOutput), strRawJoined, aLogFile: strLogFile);
+                blTest = myArcMapFuncs.SpatialJoin(myFileFuncs.GetFileName(strTempRawPoints), myFileFuncs.GetFileName(strDissolveOutput), strRawJoined, aMatchMethod: "INTERSECT", aLogFile: strLogFile);
                 if (!blTest)
                 {
                     myFileFuncs.WriteLine(strLogFile, "Error carrying out spatial join of " + strDissolveOutput + " to " + strTempRawPoints + ".");
@@ -296,6 +356,7 @@ namespace DataBuffer
 
                 // 6. Query where key fields are the same - this will give us the cluster IDs for each point/poly.
                 // Build the query based on key columns.
+                callingForm.UpdateStatus(".");
                 string strQuery = "";
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
                 {
@@ -315,6 +376,7 @@ namespace DataBuffer
                 }
 
                 // Export this selection
+                callingForm.UpdateStatus(".");
                 string strLookupTable = strTempGDB + @"\ClusterLookup";
                 blTest = myArcMapFuncs.CopyFeatures(strRawJoinedLayer, strLookupTable, aLogFile: strLogFile);
                 if (!blTest)
@@ -324,8 +386,16 @@ namespace DataBuffer
                     return lngResult;
                 }
 
+                // Index the unique ID in the lookup table.
+                blTest = myArcMapFuncs.CreateIndex(strLookupTable, strUniqueField, "LookupIndex", strLogFile);
+                if (!blTest) // Doesn't stop us carrying on.
+                {
+                    myFileFuncs.WriteLine(strLogFile, "WARNING: Could not add index to feature class " + strLookupTable + ". Process will be slow");
+                }
+
                 // 7. Calculate cluster ID back onto points/polys in new field using attribute join on unique ID.
                 // 7a. Join to raw points. (temporary join)
+                callingForm.UpdateStatus(".");
                 blTest = myArcMapFuncs.AddJoin(strTempRawLayer, strUniqueField, myFileFuncs.GetFileName(strLookupTable), strUniqueField, strLogFile);
                 if (!blTest)
                 {
@@ -335,6 +405,7 @@ namespace DataBuffer
                 }
 
                 // 7b. Calculate
+                callingForm.UpdateStatus(".");
                 string strCalc =  "[" + myFileFuncs.GetFileName(strLookupTable) + "." + strTempClusterIDField + "]";
                 blTest = myArcMapFuncs.CalculateField(strTempRawLayer, strTempRawLayer + "." + strClusterIDField, strCalc, strLogFile);
                 if (!blTest)
@@ -352,17 +423,28 @@ namespace DataBuffer
                     MessageBox.Show("Error removing join in temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return lngResult;
                 }
+                
+                // Index on ClusterID.
+                blTest = myArcMapFuncs.CreateIndex(strTempRawPoints, strClusterIDField, "RawClusterIndex", strLogFile);
+                if (!blTest) // Doesn't stop us carrying on.
+                {
+                    myFileFuncs.WriteLine(strLogFile, "WARNING: Could not add cluster index to feature class " + strTempRawPoints + ". Process will be slow");
+                }
+
                 myFileFuncs.WriteLine(strLogFile, "Cluster information transferred to temporary layer");
 
                 // Now create the final temporary output layer for input into the Buffer layer.
                 // Buffer all points/polys to required distance and dissolve on ClusterID. Even when DissolveSize =  0 we have a cluster ID.
-                string strBufferredInput = strTempGDB + @"\FinalRawBuffered";
+                string strBufferedInput = strTempGDB + @"\FinalRawBuffered";
+                string strDissolvedInput = strTempGDB + @"\FinalRawDissolved";
                 string strBufferDistance = anInputLayer.BufferSize.ToString() + " Meters";
                 string strDissolveField = strClusterIDField;
-                string strDissolveOption = "LIST";
-                
+                //string strDissolveOption = "LIST";
 
-                blTest = myArcMapFuncs.BufferFeatures(myFileFuncs.GetFileName(strTempRawLayer), strBufferredInput, strBufferDistance, strDissolveField, strDissolveOption, aLogFile: strLogFile);
+                callingForm.UpdateStatus("Buffering Features");
+                
+                // It is considerably quicker to run buffer then dissolve, rather than dissolve during buffer operation.
+                blTest = myArcMapFuncs.BufferFeatures(strTempRawLayer, strBufferedInput, strBufferDistance, aLogFile: strLogFile); // No dissolve.
                 if (!blTest)
                 {
                     myFileFuncs.WriteLine(strLogFile, "Error buffering input layer " + strTempRawLayer);
@@ -370,12 +452,29 @@ namespace DataBuffer
                     return lngResult;
                 }
 
-                string strFinalInputLayer = myFileFuncs.GetFileName(strBufferredInput); // Note this has no relevant fields other than ClusterID.
+                // Index the ClusterID
+                callingForm.UpdateStatus(".");
+                blTest = myArcMapFuncs.CreateIndex(strBufferedInput, strClusterIDField, "BuffInputIndex", strLogFile);
+                if (!blTest) // Doesn't stop us carrying on.
+                {
+                    myFileFuncs.WriteLine(strLogFile, "WARNING: Could not add index to feature class " + strBufferedInput + ". Process will be slow");
+                }
+                callingForm.UpdateStatus(".");
+                blTest = myArcMapFuncs.DissolveFeatures(myFileFuncs.GetFileName(strBufferedInput), strDissolvedInput, strDissolveField, aLogFile: strLogFile);
+                if (!blTest)
+                {
+                    myFileFuncs.WriteLine(strLogFile, "Error dissolving temporary layer " + strBufferedInput);
+                    MessageBox.Show("Error dissolving temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return lngResult;
+                }
+
+                string strFinalInputLayer = myFileFuncs.GetFileName(strDissolvedInput); // Note this has no relevant fields other than ClusterID.
 
                 // Add all the fields.
+                callingForm.UpdateStatus(".");
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
                 {
-                    blTest = myArcMapFuncs.AddField(strBufferredInput, aCol.OutputName, aCol.FieldType, aCol.FieldLength, strLogFile);
+                    blTest = myArcMapFuncs.AddField(strDissolvedInput, aCol.OutputName, aCol.FieldType, aCol.FieldLength, strLogFile);
                     if (!blTest)
                     {
                         myFileFuncs.WriteLine(strLogFile, "Error adding field " + aCol.OutputName + " to " + strFinalInputLayer);
@@ -411,7 +510,7 @@ namespace DataBuffer
                     }
                 }
                 strStatsFields = strStatsFields.Substring(0, strStatsFields.Length - 1); // remove last semicolon.
-
+                callingForm.UpdateStatus(".");
                 string strStraightStatsLayer = "Straightstats";
                 string strStraightStats = strTempGDB + @"\"+ strStraightStatsLayer;
                 blTest = myArcMapFuncs.SummaryStatistics(strTempRawLayer, strStraightStats, strStatsFields, strClusterIDField, strLogFile);
@@ -423,6 +522,7 @@ namespace DataBuffer
                 }
 
                 // Join back to the final input layer, and calculate into new fields.
+                callingForm.UpdateStatus("Calculating results");
                 
                 blTest = myArcMapFuncs.AddJoin(strFinalInputLayer, strClusterIDField, strStraightStats, strClusterIDField, strLogFile);
                 if (!blTest)
@@ -432,6 +532,7 @@ namespace DataBuffer
                     return lngResult;
                 }
 
+                callingForm.UpdateStatus(".");
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
                 {
                     string strTargetField = strFinalInputLayer + "." + aCol.OutputName;
@@ -471,6 +572,7 @@ namespace DataBuffer
                 myFileFuncs.WriteLine(strLogFile, "first, min/max and range fields calculated.");
 
                 // Now deal with the common and cluster fields.
+                callingForm.UpdateStatus(".");
                 List<string> strCommonInputFields = new List<string>();
                 List<string> strCommonOutputFields = new List<string>();
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
@@ -492,6 +594,7 @@ namespace DataBuffer
                 myFileFuncs.WriteLine(strLogFile, "Common and cluster values calculated.");
 
                 // Drop the ClusterID field from the output
+                callingForm.UpdateStatus(".");
                 blTest = myArcMapFuncs.DeleteField(strFinalInputLayer, strClusterIDField, strLogFile);
                 if (!blTest)
                 {
@@ -501,6 +604,7 @@ namespace DataBuffer
                 }
 
                 // Merge to create the final output layer.
+                callingForm.UpdateStatus("Saving output");
                 blTest = myArcMapFuncs.AppendFeatures(strFinalInputLayer, anOutputFile, strLogFile);
                 if (!blTest)
                 {
@@ -510,14 +614,17 @@ namespace DataBuffer
                 }
 
                 // Remember how many records we have added.
+                callingForm.UpdateStatus(".");
                 long lngCount = myArcMapFuncs.CountAllLayerFeatures(strFinalInputLayer); // tidy up.
                 if (lngCount > 0)
                     lngResult = lngResult + lngCount;
                 myFileFuncs.WriteLine(strLogFile, "Results added to output layer. A total of " + lngCount.ToString() + " rows were added.");
+                myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
 
                 // Remove all temporary layers.
                 // Delete all temporary files.
 
+                callingForm.UpdateStatus(".");
                 myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strTempRawPoints));
                 myArcMapFuncs.DeleteFeatureclass(strTempRawPoints); // Removes FC but the lock file remains.
 
@@ -526,10 +633,9 @@ namespace DataBuffer
                     myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strDissolveOutput));
                     myArcMapFuncs.DeleteFeatureclass(strDissolveOutput);
                 }
-
                 if (myArcMapFuncs.FeatureclassExists(strBuffOutput))
                 {
-                    myArcMapFuncs.RemoveStandaloneTable(myFileFuncs.GetFileName(strBuffOutput));
+                    myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strBuffOutput));
                     myArcMapFuncs.DeleteFeatureclass(strBuffOutput);
                 }
 
@@ -539,8 +645,12 @@ namespace DataBuffer
                 myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strLookupTable));
                 myArcMapFuncs.DeleteFeatureclass(strLookupTable);
 
-                myArcMapFuncs.RemoveLayer(strFinalInputLayer);
-                myArcMapFuncs.DeleteFeatureclass(strBufferredInput);
+                callingForm.UpdateStatus(".");
+                myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strDissolvedInput));
+                myArcMapFuncs.DeleteFeatureclass(strDissolvedInput);
+
+                myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strBufferedInput));
+                myArcMapFuncs.DeleteFeatureclass(strBufferedInput);
 
                 myArcMapFuncs.RemoveStandaloneTable(myFileFuncs.GetFileName(strStraightStats));
                 myArcMapFuncs.DeleteFeatureclass(strStraightStats); // also deletes tables.
@@ -549,9 +659,15 @@ namespace DataBuffer
 
                 myFileFuncs.WriteLine(strLogFile, "Temporary layers removed");
             }
-
-            return lngResult; // Return the number of records inserted.
             myFileFuncs.WriteLine(strLogFile, "All layers processed.");
+
+            // Set the legend
+            myArcMapFuncs.ChangeLegend(myFileFuncs.GetFileName(anOutputFile), OutputLayer.LayerFile, aLogFile: strLogFile);
+
+            myArcMapFuncs.SetContentsView();
+            callingForm.UpdateStatus("", "");
+            
+            return lngResult; // Return the number of records inserted.
         }
     }
 }

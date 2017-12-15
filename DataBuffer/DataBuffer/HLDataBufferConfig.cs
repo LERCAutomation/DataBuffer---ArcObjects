@@ -576,7 +576,8 @@ namespace HLDataBufferConfig
                 // Get the rest of the output layer definition
                 try
                 {
-                    outputLayer.LayerFile = OutLayerDef["LayerFile"].InnerText;
+                    string aLayer = layerPath + @"\";
+                    outputLayer.LayerFile = aLayer + OutLayerDef["LayerFile"].InnerText;
                 }
                 catch
                 {

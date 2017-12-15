@@ -44,7 +44,7 @@ layers.
   </TempFilePath>
 
   <LayerPath>
-  	<value>c:\aTest</value>
+  	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\LayerFiles</value>
   </LayerPath>
 
   <!--The coordinate system for output -->
@@ -180,10 +180,10 @@ layers.
 			<Value>Water_Voles_Rivers</Value>
 		</LayerName>
 		<Columns> <!-- Please do not use commas in your strings -->
-			<Value>Common_Name "CommonName", Scientific_Name "SciName", Year "RecYear", GridRef, Location, "UK_Legislation; Priority_NERC_S41" "Design", Version_Date "Version", Data_Origin "Origin", "TVERC" "Provider", "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
+			<Value>Common_Nam "CommonName", Scientific "SciName", YearNum "RecYear", GridRef, Location, "UK_Legislation; Priority_NERC_S41" "Design", Version_Da "Version", Data_Origi "Origin", "TVERC" "Provider", "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
 		</Columns>
 		<WhereClause>
-			<value>Year &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
+			<value>YearNum &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
 		<SortOrder>
 			<Value>Scientific_Name, GridRef</Value>
@@ -206,7 +206,7 @@ layers.
   	</OutputFormat>
   	<!-- The symbology to apply to the new GIS layer -->
 	<LayerFile>
-		<value>aTest.lyr</value>
+		<value>test.lyr</value>
 	</LayerFile>
 	<!-- The columns in the new GIS layer and how they will be created -->
 	<!-- Valid column types are  "key", "cluster", "first", "common", "min", "max", "range" -->

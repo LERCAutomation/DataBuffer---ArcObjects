@@ -101,7 +101,6 @@ namespace DataBuffer
         private void btnOK_Click(object sender, EventArgs e)
         {
             this.Cursor = Cursors.WaitCursor;
-            
 
             // Do we have a selection? If not, remind the user and exit.
             if (lstInput.SelectedItems.Count == 0)
@@ -126,10 +125,14 @@ namespace DataBuffer
                 }
             }
 
+            //this.btnOK.Enabled = false;
+            this.Enabled = false;
+            myArcMapFuncs.ToggleDrawing(false);
+            myArcMapFuncs.ToggleTOC(false);
+
             // Request the output file from the user.
             string strOutputFile = "None";
             bool blDone = false;
-
             while (!blDone)
             {
                 strOutputFile = myArcMapFuncs.GetOutputFileName(myConfig.OutputLayer.Format, myConfig.DefaultPath);
@@ -155,12 +158,14 @@ namespace DataBuffer
                 {
                     // User pressed Cancel - return to main menu.
                     this.Cursor = Cursors.Default;
+                    this.Enabled = true;
+                    myArcMapFuncs.ToggleDrawing(true);
+                    myArcMapFuncs.ToggleTOC(true);
                     return;
                 }
             }
 
-            myArcMapFuncs.ToggleDrawing(false);
-            myArcMapFuncs.ToggleTOC(false);
+            
 
             // Find the selected map layers.
             MapLayers Selectedlayers = new MapLayers();
@@ -182,7 +187,7 @@ namespace DataBuffer
             myDataBufferFuncs.OutputLayer = myConfig.OutputLayer;
 
             // *** RUN THE FUNCTION ***
-            long intResult = myDataBufferFuncs.RunDataBuffer(strOutputFile, strLogFile);
+            long intResult = myDataBufferFuncs.RunDataBuffer(strOutputFile, strLogFile, this);
 
             // Report the result
             if (intResult != -999)
@@ -200,6 +205,7 @@ namespace DataBuffer
 
             // Finish off.
             this.Cursor = Cursors.Default;
+            this.Enabled = true;
             if (intResult != -999)
             {
                 DialogResult dlResult = MessageBox.Show("Process complete. Do you wish to close the form?", "Data Buffer", MessageBoxButtons.YesNo);
@@ -221,15 +227,20 @@ namespace DataBuffer
             myArcMapFuncs.ToggleTOC(true);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnCancel_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        private void button1_Click_1(object sender, EventArgs e)
+        public void UpdateStatus(string aNewStatusBottom, string aNewStatusTop = "")
         {
-            myArcMapFuncs.SetMostCommon("FinalRawBuffered", "ClusterID", new List<string>() { "GridRef", "Origin" }, "TempRaw", new List<string>() { "GridRef", "Origin" });
-            MessageBox.Show("Finished");
+            if (aNewStatusTop != "")
+                slStatus1.Text = aNewStatusTop;
+            if (aNewStatusBottom == ".")
+                slStatus2.Text = slStatus2.Text + ".";
+            else
+                slStatus2.Text = aNewStatusBottom;
+            this.Update();
         }
     }
 }

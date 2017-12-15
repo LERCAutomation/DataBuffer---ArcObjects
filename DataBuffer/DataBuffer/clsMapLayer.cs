@@ -74,6 +74,17 @@ namespace DataBuffer
                 _layers.Add(aLayer);
             }
         }
+
+        public MapLayer Get(int Index)
+        {
+            if (Index <= _layers.Count - 1)
+            {
+                return _layers[Index];
+            }
+            else
+                return null;
+
+        }
     }
 
     public class OutputLayer
