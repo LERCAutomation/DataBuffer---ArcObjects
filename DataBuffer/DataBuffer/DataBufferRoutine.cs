@@ -160,6 +160,7 @@ namespace DataBuffer
                 }
             }
             myFileFuncs.WriteLine(strLogFile, "New fields written to output Feature Class " + strOutFCName);
+            myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
 
             // 3. For each input layer type (note we have points and polygons separate)
             foreach (MapLayer anInputLayer in InputLayers)
@@ -357,12 +358,14 @@ namespace DataBuffer
                 // 6. Query where key fields are the same - this will give us the cluster IDs for each point/poly.
                 // Build the query based on key columns.
                 callingForm.UpdateStatus(".");
+                List<string> theCriteriaFields = new List<string>();
                 string strQuery = "";
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
                 {
                     if (aCol.ColumnType == "key" || (aCol.ColumnType=="cluster" && anInputLayer.DissolveSize == 0)) 
                     {
                         strQuery = strQuery + aCol.InputName + " = " + aCol.InputName + "_1 AND ";
+                        theCriteriaFields.Add(aCol.InputName);
                     }
                 }
                 // Remove the last AND
@@ -423,6 +426,24 @@ namespace DataBuffer
                     MessageBox.Show("Error removing join in temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return lngResult;
                 }
+
+                // Sort out the cases where the join hasn't worked. This addresses a very odd bug in ArcGIS.
+
+                intTest = myArcMapFuncs.SetValueFromUnderlyingLayer(strTempRawLayer, strUniqueField, new List<string>() { strClusterIDField }, theCriteriaFields, myFileFuncs.GetFileName(strDissolveOutput), new List<string>() { strTempClusterIDField }, aLogFile);
+                if (intTest < 0)
+                {
+                    myFileFuncs.WriteLine(strLogFile, "Could not assign missing values to " + strTempRawLayer);
+                    MessageBox.Show("Could not fix missing cluster IDs in temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return lngResult;
+                }
+                else if (intTest == 0)
+                {
+                    myFileFuncs.WriteLine(strLogFile, "There were no missing cluster IDs encountered for layer " + anInputLayer.LayerName);
+                }
+                else
+                {
+                    myFileFuncs.WriteLine(strLogFile, intTest.ToString() + " missing cluster IDs fixed for layer " + anInputLayer.LayerName);
+                }
                 
                 // Index on ClusterID.
                 blTest = myArcMapFuncs.CreateIndex(strTempRawPoints, strClusterIDField, "RawClusterIndex", strLogFile);
@@ -442,7 +463,21 @@ namespace DataBuffer
                 //string strDissolveOption = "LIST";
 
                 callingForm.UpdateStatus("Buffering Features");
-                
+
+                strQuery = strUniqueField + " > 0"; // for some reason we're not buffering anything - try and fix.
+                blTest = myArcMapFuncs.SelectLayerByAttributes(strTempRawLayer, strQuery, aLogFile: strLogFile);
+                if (!blTest)
+                {
+                    myFileFuncs.WriteLine(strLogFile, "Could not select from raw input " + strTempRawLayer);
+                    MessageBox.Show("Unable to select features in temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return lngResult;
+                }
+                if (myArcMapFuncs.CountSelectedLayerFeatures(strTempRawLayer) == 0)
+                {
+                    myFileFuncs.WriteLine(strLogFile, "No features selected for buffering on temporary layer " + strTempRawLayer);
+                    MessageBox.Show("No features selected on temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return lngResult;
+                }
                 // It is considerably quicker to run buffer then dissolve, rather than dissolve during buffer operation.
                 blTest = myArcMapFuncs.BufferFeatures(strTempRawLayer, strBufferedInput, strBufferDistance, aLogFile: strLogFile); // No dissolve.
                 if (!blTest)
@@ -532,9 +567,10 @@ namespace DataBuffer
                     return lngResult;
                 }
 
-                callingForm.UpdateStatus(".");
+                
                 foreach (InputColumn aCol in anInputLayer.InputColumns)
                 {
+                    callingForm.UpdateStatus(".");
                     string strTargetField = strFinalInputLayer + "." + aCol.OutputName;
                     if (aCol.InputName.Substring(0, 1) == "\"")
                     {

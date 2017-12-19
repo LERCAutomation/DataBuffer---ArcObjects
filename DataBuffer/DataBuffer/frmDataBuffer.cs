@@ -145,7 +145,7 @@ namespace DataBuffer
                         if (confirmOverwrite == System.Windows.Forms.DialogResult.Yes)
                         {
                             // Delete the existing file
-                            myArcMapFuncs.DeleteFeatureclass(strOutputFile);
+                            //myArcMapFuncs.DeleteFeatureclass(strOutputFile);
                             blDone = true;
                         }
                     }

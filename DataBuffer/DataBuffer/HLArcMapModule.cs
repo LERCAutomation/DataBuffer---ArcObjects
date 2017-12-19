@@ -634,14 +634,114 @@ namespace HLArcMapModule
                     myFileFuncs.WriteLine(aLogFile, "Function FieldIsNumeric returned the following error: the field " + aFieldName + " does not exist in this layer");
                 return false;
             }
+            bool blResult = false;
+            if (pField.Type == esriFieldType.esriFieldTypeDouble |
+                pField.Type == esriFieldType.esriFieldTypeInteger |
+                pField.Type == esriFieldType.esriFieldTypeSingle |
+                pField.Type == esriFieldType.esriFieldTypeSmallInteger) blResult = true;
+
+            pField = null;
+            return blResult;
+
+        }
+
+        public bool FieldIsNumeric(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            bool blResult = false;
+
+            int anIndex = aFeatureClass.FindField(aFieldName);
+            if (anIndex < 0)
+            {
+                if (Messages) MessageBox.Show("Field " + aFieldName + " does not exist in this feature class", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "The function FieldIsNumeric returned the following error: Field " + aFieldName + " does not exist in this feature class");
+                return blResult;
+            }
+
+            IField pField = aFeatureClass.Fields.get_Field(anIndex);
 
             if (pField.Type == esriFieldType.esriFieldTypeDouble |
                 pField.Type == esriFieldType.esriFieldTypeInteger |
                 pField.Type == esriFieldType.esriFieldTypeSingle |
-                pField.Type == esriFieldType.esriFieldTypeSmallInteger) return true;
-            
-            return false;
+                pField.Type == esriFieldType.esriFieldTypeSmallInteger) blResult = true;
 
+            pField = null;
+            return blResult;
+        }
+
+        public bool FieldIsString(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            bool blResult = false;
+
+            int anIndex = aFeatureClass.FindField(aFieldName);
+            if (anIndex < 0)
+            {
+                if (Messages) MessageBox.Show("Field " + aFieldName + " does not exist in this feature class", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "The function FieldIsNumeric returned the following error: Field " + aFieldName + " does not exist in this feature class");
+                return blResult;
+            }
+
+            IField pField = aFeatureClass.Fields.get_Field(anIndex);
+
+            if (pField.Type == esriFieldType.esriFieldTypeString) blResult = true;
+            pField = null;
+            return blResult;
+        }
+
+        public bool FieldIsDate(string aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            // Check the obvious.
+            if (!FeatureclassExists(aFeatureClass))
+            {
+                if (Messages)
+                    MessageBox.Show("The featureclass " + aFeatureClass + " doesn't exist");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function FieldIsNumeric returned the following error: The featureclass " + aFeatureClass + " doesn't exist");
+                return false;
+            }
+
+            if (!FieldExists(aFeatureClass, aFieldName))
+            {
+                if (Messages)
+                    MessageBox.Show("The field " + aFieldName + " does not exist in featureclass " + aFeatureClass);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function FieldIsNumeric returned the following error: the field " + aFieldName + " does not exist in feature class " + aFeatureClass);
+                return false;
+            }
+
+            bool blResult = false;
+            IField pField = GetFCField(aFeatureClass, aFieldName);
+            if (pField == null)
+            {
+                if (Messages) MessageBox.Show("The field " + aFieldName + " does not exist in this layer", "Field Is Numeric");
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function FieldIsNumeric returned the following error: the field " + aFieldName + " does not exist in this layer");
+                return false;
+            }
+
+            if (pField.Type == esriFieldType.esriFieldTypeDate) blResult = true;
+            pField = null;
+            return blResult;
+
+        }
+
+        public bool FieldIsDate(IFeatureClass aFeatureClass, string aFieldName, string aLogFile = "", bool Messages = false)
+        {
+            bool blResult = false;
+
+            int anIndex = aFeatureClass.FindField(aFieldName);
+            if (anIndex < 0)
+            {
+                if (Messages) MessageBox.Show("Field " + aFieldName + " does not exist in this feature class", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "The function FieldIsNumeric returned the following error: Field " + aFieldName + " does not exist in this feature class");
+                return blResult;
+            }
+
+            IField pField = aFeatureClass.Fields.get_Field(anIndex);
+
+            if (pField.Type == esriFieldType.esriFieldTypeDate) blResult = true;
+
+            pField = null;
+            return blResult;
         }
 
         #region AddField
@@ -2643,20 +2743,198 @@ namespace HLArcMapModule
             return blResult;
         }
 
+        public int SetValueFromUnderlyingLayer(string anInputLayer, string aUniqueField, List<string> inputValueFields, List<string> criteriaFields, string aSourceLayer, List<string> SourceValueFields, string aLogFile = "", bool Messages = false)
+        {
+            // This function addresses the very strange bug in ArcGIS where it a spatial join fails on one or two points for no obvious reasons.
+            int intResult = -999;
+            bool blTest = false;
+
+            // Select all the rows where the first of inputValueFields == null;
+            string strQuery = inputValueFields[0] + " is null";
+            blTest = SelectLayerByAttributes(anInputLayer, strQuery, aLogFile: aLogFile, Messages: Messages);
+            if (!blTest)
+            {
+                if (Messages) MessageBox.Show("Could not select by attributes", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetValueFromUnderlyingLayer returned the following error: Could not select by attributes from layer " + anInputLayer);
+                return intResult;
+            }
+
+            if (CountSelectedLayerFeatures(anInputLayer) == 0)
+            {
+                // Nothing to fix; return true.
+                if (aLogFile != "")
+                {
+                    // myFileFuncs.WriteLine(aLogFile, "No missing values in layer " + anInputLayer);
+                    return 0;
+                }
+            }
+
+            // Get list of unique IDs (numeric)
+            List<int> UniqueList = new List<int>(); // assumes unique IDs are numerical
+            List<string> CriteriaList = new List<string>(); // assumes criteria are strings
+
+            ILayer pLayer = GetLayer(anInputLayer);
+            IFeatureLayer pFLayer = (IFeatureLayer)pLayer;
+            IFeatureSelection aFS = (IFeatureSelection)pFLayer;
+            ICursor pCurs = null;
+            aFS.SelectionSet.Search(null, false, out pCurs);
+            IFeatureClass pFC = pFLayer.FeatureClass;
+            int intIndex = pFC.FindField(aUniqueField);
+
+            if (intIndex < 0)
+            {
+                if (Messages) MessageBox.Show("The field " + aUniqueField + " doesn't exist in layer " + anInputLayer, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetValueFromUnderlyingLayer returned the following error: The field " + aUniqueField + " doesn't exist in layer " + anInputLayer);
+                return intResult;
+            }
+            
+            IRow pRow = pCurs.NextRow();
+            while (pRow != null)
+            {
+                UniqueList.Add((int) pRow.get_Value(intIndex));
+                foreach (string aCritField in criteriaFields)
+                {
+                    int intInd = pFC.FindField(aCritField);
+                    CriteriaList.Add(pRow.get_Value(intInd).ToString());
+                }
+
+                pRow = pCurs.NextRow();
+            }
+
+            // Release this pile of objects.
+            pLayer = null;
+            pFLayer = null;
+            aFS = null;
+            pCurs = null;
+            pRow = null;
+
+            // For each unique found
+            foreach (int unique in UniqueList)
+            {
+                // Select input layer by unique ID
+                strQuery = aUniqueField + " = " + unique.ToString();
+                SelectLayerByAttributes(anInputLayer, strQuery, aLogFile: aLogFile, Messages: Messages);
+
+                if (CountSelectedLayerFeatures(anInputLayer) == 0)
+                {
+                    myFileFuncs.WriteLine(aLogFile, "Could not select feature with unique ID " + unique.ToString());
+                    return intResult;
+                }
+                else if (CountSelectedLayerFeatures(anInputLayer) > 1)
+                {
+                    myFileFuncs.WriteLine(aLogFile, "Too many features with unique ID " + unique.ToString());
+                    return intResult;
+                }
+
+                // Select by location: new selection, CONTAINS on Input layer
+                SelectLayerByLocation(aSourceLayer, anInputLayer, "CONTAINS", "0.1 Meters", aLogFile: aLogFile, Messages: Messages);
+                if (CountSelectedLayerFeatures(aSourceLayer) == 0)
+                {
+                    myFileFuncs.WriteLine(aLogFile, "The feature with unique ID " + unique.ToString() + " did not have a match in the source layer");
+                    return intResult;
+                }
+
+                // If more than 1 is selected
+                if (CountSelectedLayerFeatures(aSourceLayer) > 1) // We've found more than one and must do an additional attribute query.
+                {
+                    // Apply criteria using selectbyattributes
+                    int i = 0;
+                    strQuery = "";
+                    foreach (string aField in criteriaFields)
+                    {
+                        
+                        strQuery = strQuery + aField + " = " + CriteriaList[i] + " AND ";
+                        i++;
+                    }
+                    strQuery = strQuery.Substring(0, strQuery.Length - 5);
+                    SelectLayerByAttributes(aSourceLayer, strQuery, "SUBSET_SELECTION", aLogFile, Messages);
+                    if (CountSelectedLayerFeatures(aSourceLayer) == 0)
+                    {
+                        if (Messages) MessageBox.Show("No selection on layer " + aSourceLayer, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (aLogFile != "")
+                            myFileFuncs.WriteLine(aLogFile, "The function SetValueFromUnderlyingLayer returned the following error: No selection on layer " + aSourceLayer + " for ID " + unique.ToString());
+                        return intResult;
+                    }
+                    else if (CountAllLayerFeatures(aSourceLayer) > 1)
+                    {
+                        if (Messages) MessageBox.Show("Too many features selected on layer " + aSourceLayer, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (aLogFile != "")
+                            myFileFuncs.WriteLine(aLogFile, "The function SetValueFromUnderlyingLayer returned the following error: Too many features selected on layer " + aSourceLayer + " for ID " + unique.ToString());
+                        return intResult;
+                    }
+                }
+                // Find the value of the sourceValueFields
+                pLayer = GetLayer(aSourceLayer);
+                pFLayer = (IFeatureLayer)pLayer;
+                aFS = (IFeatureSelection)pFLayer;
+                aFS.SelectionSet.Search(null, false, out pCurs);
+                pFC = pFLayer.FeatureClass;
+                pRow = pCurs.NextRow(); // There is only one row selected; this should always get the correct row.
+
+                // Calculate into inputValueFields USE CURSOR WOULD BE BETTER
+                int p = 0;
+                foreach (string anInputField in inputValueFields)
+                {
+                    string strSourceField = SourceValueFields[p];
+                    int theIndex = pFC.FindField(strSourceField);
+                    if (FieldIsNumeric(pFC, strSourceField, aLogFile, Messages))
+                    {
+                        var theValue = pRow.get_Value(theIndex);
+                        blTest = CalculateField(anInputLayer, anInputField, theValue.ToString()); // Arc will round if it was an integer.
+                    }
+                    else if (FieldIsString(pFC, strSourceField, aLogFile, Messages))
+                    {
+                        string theValue = "\"" + pRow.get_Value(theIndex).ToString() + "\"";
+                        blTest = CalculateField(anInputLayer, anInputField, theValue);
+                    }
+                    else
+                    {
+                        if (Messages) MessageBox.Show("Field " + strSourceField + " has a type that is not supported.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (aLogFile != "")
+                            myFileFuncs.WriteLine(aLogFile, "Function SetValueFromUnderlyingLayer returned the following error: Field " + strSourceField + " has a type that is not supported.");
+                        return intResult;
+                    }
+                    if (!blTest)
+                        {
+                            if (Messages) MessageBox.Show("Could not calculate field " + anInputField + " in " + anInputLayer, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            if (aLogFile != "")
+                                myFileFuncs.WriteLine(aLogFile, "Function SetValueFromUnderlyingLayer returned the following error: Could not calculate field " + anInputField + " in " + anInputLayer);
+                            return intResult;
+                        }
+                    p++;
+                }
+                
+            }
+
+            // Clear selected features on input layer.
+            ClearSelectedMapFeatures(anInputLayer);
+            myFileFuncs.WriteLine(aLogFile, UniqueList.Count.ToString() + " feature(s) had no cluster ID assigned in layer " + anInputLayer + ". Fixed.");
+
+            pLayer = null;
+            pFLayer = null;
+            aFS = null;
+            pCurs = null;
+            pRow = null;
+            // We have successfully navigated the whole thing.
+            intResult = UniqueList.Count;
+            return intResult;
+
+        }
+
         public bool CreateFeatureClassNew(string aWorkspaceName, string aFeatureClassName, string aGeometryType, string aTemplateLayer = "", string aSpatialReference = null, string aLogFile = "", bool Overwrite = true, bool Messages = false)
         {
             // create a new FC based on a template layer (if given) using the spatial reference of aSpatialReference, which can also be a template layer.
             bool blResult = false;
             string aFullName = aWorkspaceName + @"\" + aFeatureClassName;
-            if (FeatureclassExists(aFullName))
+            if (FeatureclassExists(aFullName) && !Overwrite)
             {
-                blResult = DeleteFeatureclass(aFullName);
-                if (!blResult)
-                {
-                    if (Messages) MessageBox.Show("Could not delete feature class " + aFullName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "Function CreateFeatureClass returned the following: Could not delete feature class " + aFullName + ". Continuing using Overwrite.");
-                    //return blResult; // couldn't delete it.
-                }
+
+                if (Messages) MessageBox.Show("Feature class " + aFullName + " already exists. Can't overwrite", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "") myFileFuncs.WriteLine(aLogFile, "Function CreateFeatureClass returned the following: Feature class " + aFullName + " already exists. Can't overwrite.");
+                return blResult; // couldn't delete it.
+                
             }
 
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
@@ -4177,28 +4455,74 @@ namespace HLArcMapModule
             // Goes through aWriteLayer's Uniques, finds all rows in anInputLayer and looks for the occurrences of aValueFieldList.
             // Then writes the results to aFieldList. Assumes aFieldList and aValueFieldList are in sync. Also makes the gross assumption
             // that UniqueField is an integer and the same in both layers.
-
+            bool blResult = false;
             // do QA
+            if (!LayerExists(aWriteLayer))
+            {
+                if (Messages) MessageBox.Show("The layer " + aWriteLayer + " doesn't exist in the view", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetMostCommon returned the following error: The layer " + aWriteLayer + " doesn't exist in the view");
+                return blResult;
+            }
+            if (!LayerExists(anInputLayer))
+            {
+                if (Messages) MessageBox.Show("The layer " + anInputLayer + " doesn't exist in the view", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetMostCommon returned the following error: The layer " + anInputLayer + " doesn't exist in the view");
+                return blResult;
+            }
 
             IFeatureClass pFC = GetFeatureClassFromLayerName(aWriteLayer);
+            if (pFC == null)
+            {
+                if (Messages) MessageBox.Show("The layer " + aWriteLayer + " is not a feature layer", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetMostCommon returned the following error: The layer " + aWriteLayer + " is not a feature layer");
+                return blResult ;
+            }
             IFeatureCursor pCurs = pFC.Update(null, false);
 
             IFeatureLayer pLayer = (IFeatureLayer) GetLayer(anInputLayer);
-            IFeatureClass pClass = pLayer.FeatureClass;
+            if (pLayer == null)
+            {
+                if (Messages) MessageBox.Show("The layer " + anInputLayer + " is not a feature layer", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetMostCommon returned the following error: The layer " + anInputLayer + " is not a feature layer");
+                return blResult;
+            }
+            IFeatureClass pClass = pLayer.FeatureClass; // should always work on feature layer.
 
             // the relevant field index.
             int inUniqueIndex = pFC.FindField(aUniqueField);
+            if (inUniqueIndex < 0)
+            {
+                if (Messages) MessageBox.Show("The unique ID field does not exist", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (aLogFile != "")
+                    myFileFuncs.WriteLine(aLogFile, "Function SetMostCommon returned the following error: The layer " + aWriteLayer + " has no field named " + aUniqueField);
+                return blResult;
+            }
 
             IFeature pRow = pCurs.NextFeature();
             while (pRow != null)
             {
                 // get the unique
-                int intUnique = (int)pRow.get_Value(inUniqueIndex);
+                var Unique = pRow.get_Value(inUniqueIndex);
+                if (Unique == null)
+                {
+                    if (Messages) MessageBox.Show("Null value found for unique ID in layer " + aWriteLayer, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    if (aLogFile != "")
+                        myFileFuncs.WriteLine(aLogFile, "The function SetMostCommon returned the following error: Null value found for unique ID in layer " + aWriteLayer);
+                    pFC = null;
+                    pCurs = null;
+                    pLayer = null;
+                    pClass = null;
+                    return blResult;
+                }
+
+                int intUnique = (int)Unique; //pRow.get_Value(inUniqueIndex);
+
                 // Select the input layer on this
                 string strQuery = aUniqueField + " = " + intUnique.ToString();
-                //SelectLayerByAttributes(anInputLayer, strQuery, "NEW_SELECTION", aLogFile);  // This is far too slow.
-                
-
                 int aTracker = 0;
                 foreach (string aFieldName in aValueFieldList)
                 {
@@ -4208,13 +4532,12 @@ namespace HLArcMapModule
                     string anOutFieldname = aFieldList[aTracker];
                     int anOutFieldIndex = pFC.FindField(anOutFieldname);
 
-                    // ICursor pResCurs = null;
-                    //IFeatureSelection pSelSet = (IFeatureSelection)pLayer;
-                    //pSelSet.SelectionSet.Search(null, false, out pResCurs);
                     IQueryFilter pFilt = new QueryFilterClass();
                     pFilt.WhereClause = strQuery;
                     pFilt.SubFields = aFieldName;
                     IFeatureCursor pResCurs =  pClass.Search(pFilt, false);
+
+                    pFilt = null; // get rid.
 
                     IFeature aRow = pResCurs.NextFeature();
                     List<string> theValues = new List<string>();
@@ -4260,7 +4583,7 @@ namespace HLArcMapModule
                         i++; 
                     }
                     // set the value of the field to this object.
-                    pRow.set_Value(anOutFieldIndex, theMaxValue);
+                    pRow.set_Value(anOutFieldIndex, theMaxValue); // Could deal with numbers, too...
 
                     aTracker++;
                 }
@@ -4269,7 +4592,13 @@ namespace HLArcMapModule
                 pRow = pCurs.NextFeature();
             }
 
-            return true;
+            pFC = null;
+            pCurs = null;
+            pLayer = null;
+            pClass = null;
+
+            blResult = true;
+            return blResult;
         }
 
         public void AnnotateLayer(string thisLayer, String LabelExpression, string aFont = "Arial",double aSize = 10, int Red = 0, int Green = 0, int Blue = 0, string OverlapOption = "OnePerShape", bool annotationsOn = true, bool showMapTips = false, string aLogFile = "", bool Messages = false)

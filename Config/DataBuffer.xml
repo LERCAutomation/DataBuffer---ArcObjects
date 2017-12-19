@@ -157,7 +157,7 @@ layers.
 	</GCNs>
 	<WaterVoles>
 		<LayerName>
-			<Value>Water_Voles</Value>
+			<Value>Water_Voles_From_SQL_Point</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
