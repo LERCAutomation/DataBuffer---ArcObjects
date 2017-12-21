@@ -133,25 +133,27 @@ namespace DataBuffer
             }
 
 
-            // 2b. Create the empty output FC
+            // 2b. Create the empty output FC ini the temporary directory.
 
 
             callingForm.UpdateStatus(".");
-            myArcMapFuncs.CreateFeatureClassNew(strOutFolder, strOutFCName,"POLYGON", "", InputLayers.Get(0).LayerName, aLogFile);
-            if (!myArcMapFuncs.FeatureclassExists(anOutputFile))
+            string strTempFinalOutputLayer = "TempFinal";
+            string strTempFinalOutput = strTempGDB + @"\" + strTempFinalOutputLayer;
+            myArcMapFuncs.CreateFeatureClassNew(strTempGDB, strTempFinalOutputLayer,"POLYGON", "", InputLayers.Get(0).LayerName, aLogFile);
+            if (!myArcMapFuncs.FeatureclassExists(strTempFinalOutput))
             {
-                myFileFuncs.WriteLine(strLogFile, "Could not create output feature class " + anOutputFile);
+                myFileFuncs.WriteLine(strLogFile, "Could not create output feature class " + strTempFinalOutput);
                 MessageBox.Show("Output feature class could not be created", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return lngResult;
             }
-            myFileFuncs.WriteLine(strLogFile, "Output Feature Class " + anOutputFile + " created.");
+            myFileFuncs.WriteLine(strLogFile, "Output Feature Class " + strTempFinalOutput + " created.");
 
             // 2c. Add fields
             foreach (OutputColumn aCol in OutputLayer.OutputColumns)
             {
                 callingForm.UpdateStatus(".");
                 // The used version of AddField takes account of simple column types.
-                blTest = myArcMapFuncs.AddField(anOutputFile, aCol.ColumnName, aCol.FieldType, aCol.ColumnLength, aLogFile);
+                blTest = myArcMapFuncs.AddField(strTempFinalOutput, aCol.ColumnName, aCol.FieldType, aCol.ColumnLength, aLogFile);
                 if (!blTest)
                 {
                     myFileFuncs.WriteLine(strLogFile, "Could not create output field " + aCol.ColumnName);
@@ -159,7 +161,7 @@ namespace DataBuffer
                     return lngResult;
                 }
             }
-            myFileFuncs.WriteLine(strLogFile, "New fields written to output Feature Class " + strOutFCName);
+            myFileFuncs.WriteLine(strLogFile, "New fields written to output Feature Class " + strTempFinalOutput);
             myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
 
             // 3. For each input layer type (note we have points and polygons separate)
@@ -601,6 +603,32 @@ namespace DataBuffer
                         MessageBox.Show("Error calculating into temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return lngResult;
                     }
+                    // Fix the special case where the column type is 'range' and the range covers a single value.
+                    if (aCol.ColumnType == "range")
+                    {
+                        strQuery = strStraightStatsLayer + "." + "MIN_" + aCol.InputName + " = " + strStraightStatsLayer + "." + "MAX_" + aCol.InputName;
+                        blTest = myArcMapFuncs.SelectLayerByAttributes(strFinalInputLayer, strQuery, aLogFile: strLogFile);
+                        if (!blTest)
+                        {
+                            myFileFuncs.WriteLine(strLogFile, "Error selecting features from " + strFinalInputLayer + " using selection query " + strQuery);
+                            MessageBox.Show("Error selecting features from " + strFinalInputLayer, "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return lngResult;
+                        }
+                        if (myArcMapFuncs.CountSelectedLayerFeatures(strFinalInputLayer) > 0)
+                        {
+                            strCalc = "[" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "]";
+                            blTest = myArcMapFuncs.CalculateField(strFinalInputLayer, aCol.OutputName, strCalc, strLogFile);
+                            if (!blTest)
+                            {
+                                myFileFuncs.WriteLine(strLogFile, "Error calculating field " + aCol.OutputName + " in temporary layer " + strFinalInputLayer + " using the following calculation: " + strCalc);
+                                MessageBox.Show("Error calculating into temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return lngResult;
+                            }
+
+                            myArcMapFuncs.ClearSelectedMapFeatures(strFinalInputLayer);
+                        }
+                    }
+
                 }
 
                 myArcMapFuncs.RemoveJoin(strFinalInputLayer, strLogFile);
@@ -641,7 +669,7 @@ namespace DataBuffer
 
                 // Merge to create the final output layer.
                 callingForm.UpdateStatus("Saving output");
-                blTest = myArcMapFuncs.AppendFeatures(strFinalInputLayer, anOutputFile, strLogFile);
+                blTest = myArcMapFuncs.AppendFeatures(strFinalInputLayer, strTempFinalOutput, strLogFile);
                 if (!blTest)
                 {
                     myFileFuncs.WriteLine(strLogFile, "Could not append temporary results " + strFinalInputLayer + " to output layer + " + anOutputFile);
@@ -688,6 +716,9 @@ namespace DataBuffer
                 myArcMapFuncs.RemoveLayer(myFileFuncs.GetFileName(strBufferedInput));
                 myArcMapFuncs.DeleteFeatureclass(strBufferedInput);
 
+                myArcMapFuncs.RemoveLayer(strTempFinalOutputLayer);
+                myArcMapFuncs.DeleteFeatureclass(strTempFinalOutput);
+
                 myArcMapFuncs.RemoveStandaloneTable(myFileFuncs.GetFileName(strStraightStats));
                 myArcMapFuncs.DeleteFeatureclass(strStraightStats); // also deletes tables.
 
@@ -697,8 +728,20 @@ namespace DataBuffer
             }
             myFileFuncs.WriteLine(strLogFile, "All layers processed.");
 
+            // Write the final output.
+            blTest = myArcMapFuncs.CopyFeatures(strTempFinalOutput, anOutputFile, aLogFile: strLogFile);
+            if (!blTest)
+            {
+                myFileFuncs.WriteLine(strLogFile, "Could not copy temporary results " + strTempFinalOutput + " to final output layer + " + anOutputFile);
+                MessageBox.Show("Error copy temporary results to final output", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return lngResult;
+            }
+
             // Set the legend
-            myArcMapFuncs.ChangeLegend(myFileFuncs.GetFileName(anOutputFile), OutputLayer.LayerFile, aLogFile: strLogFile);
+            string strOutLayer = myFileFuncs.GetFileName(anOutputFile);
+            if (strOutLayer.Substring(strOutLayer.Length - 4, 4) == ".shp")
+                strOutLayer = myFileFuncs.ReturnWithoutExtension(strOutLayer);
+            myArcMapFuncs.ChangeLegend(strOutLayer, OutputLayer.LayerFile, aLogFile: strLogFile);
 
             myArcMapFuncs.SetContentsView();
             callingForm.UpdateStatus("", "");

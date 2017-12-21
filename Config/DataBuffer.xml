@@ -202,7 +202,7 @@ layers.
   	<!-- The output format for the buffer layer -->
   	<!-- Use Shape (Shapefile) or GDB (file Geodatabase) -->
   	<OutputFormat>
-  		<value>GDB</value> 
+  		<value>Shape</value> 
   	</OutputFormat>
   	<!-- The symbology to apply to the new GIS layer -->
 	<LayerFile>
