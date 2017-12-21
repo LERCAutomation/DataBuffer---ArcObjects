@@ -3538,7 +3538,7 @@ namespace HLArcMapModule
             }
         }
 
-        public bool CalculateField(string aLayerName, string aFieldName, string aCalculate, string aLogFile = "", bool Messages = false)
+        public bool CalculateField(string aLayerName, string aFieldName, string aCalculate, string aCodeBlock = "", string aLogFile = "", bool Messages = false)
         {
             // This takes both layers and FCs which is why I've skipped the error checking
             // tut, tut.
@@ -3556,6 +3556,7 @@ namespace HLArcMapModule
             parameters.Add(aFieldName);
             parameters.Add(aCalculate);
             parameters.Add("VB");
+            parameters.Add(aCodeBlock);
 
             try
             {
@@ -3917,7 +3918,7 @@ namespace HLArcMapModule
                             AddLayerField(strNewLayer, strNewField, pField.Type, pField.Length, aLogFile, Messages);
                             // Calculate the new field.
                             string strCalc = "[" + strInputField + "]";
-                            CalculateField(strNewLayer, strNewField, strCalc, aLogFile, Messages);
+                            CalculateField(strNewLayer, strNewField, strCalc, "", aLogFile, Messages);
                             DeleteLayerField(strNewLayer, strInputField, aLogFile, Messages);
                         }
                         
@@ -4050,7 +4051,7 @@ namespace HLArcMapModule
             if (aRadius != "none")
             {
                 AddField(ref pResultFC, "Radius", esriFieldType.esriFieldTypeString, 25, aLogFile, Messages);
-                CalculateField(anOutShapefile, "Radius", '"' + aRadius + '"', aLogFile, Messages);
+                CalculateField(anOutShapefile, "Radius", '"' + aRadius + '"', "", aLogFile, Messages);
             }
 
             // Now drop any fields from the output that we don't want.

@@ -412,7 +412,8 @@ namespace DataBuffer
                 // 7b. Calculate
                 callingForm.UpdateStatus(".");
                 string strCalc =  "[" + myFileFuncs.GetFileName(strLookupTable) + "." + strTempClusterIDField + "]";
-                blTest = myArcMapFuncs.CalculateField(strTempRawLayer, strTempRawLayer + "." + strClusterIDField, strCalc, strLogFile);
+                string strCode = "";
+                blTest = myArcMapFuncs.CalculateField(strTempRawLayer, strTempRawLayer + "." + strClusterIDField, strCalc, strCode, strLogFile);
                 if (!blTest)
                 {
                     myFileFuncs.WriteLine(strLogFile, "Error calculating field " + strTempRawLayer + "." + strClusterIDField + " in  layer" + strTempRawLayer);                      
@@ -574,6 +575,8 @@ namespace DataBuffer
                 {
                     callingForm.UpdateStatus(".");
                     string strTargetField = strFinalInputLayer + "." + aCol.OutputName;
+                    strCalc = "";
+                    strCode = "";
                     if (aCol.InputName.Substring(0, 1) == "\"")
                     {
                         strCalc = aCol.InputName;
@@ -593,42 +596,25 @@ namespace DataBuffer
                     else if (aCol.ColumnType == "range")
                     {
                         // range: "min-max"
-                        strCalc = "[" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "] & \"-\" &";
-                        strCalc = strCalc + "[" + strStraightStatsLayer + "." + "MAX_" + aCol.InputName + "]";
+                        strCalc = "range";
+                        strCode = "Dim range\\nIf [" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "] = [" + strStraightStatsLayer + "." + "MAX_" + aCol.InputName + "] ";
+                        strCode = strCode + "Then range = [" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "] ";
+                        strCode = strCode + "else range = [" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "] ";
+                        strCode = strCode + "& \" - \" & [" + strStraightStatsLayer + "." + "MAX_" + aCol.InputName + "] end if";
+                        //strCalc = "[" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "] & \"-\" &";
+                        //strCalc = strCalc + "[" + strStraightStatsLayer + "." + "MAX_" + aCol.InputName + "]";
                     }
-                    blTest = myArcMapFuncs.CalculateField(strFinalInputLayer, aCol.OutputName, strCalc, strLogFile);
-                    if (!blTest)
+
+                    if (strCalc != "")
                     {
-                        myFileFuncs.WriteLine(strLogFile, "Error calculating field " + aCol.OutputName + " in temporary layer " + strFinalInputLayer + " using the following calculation: " + strCalc);
-                        MessageBox.Show("Error calculating into temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return lngResult;
-                    }
-                    // Fix the special case where the column type is 'range' and the range covers a single value.
-                    if (aCol.ColumnType == "range")
-                    {
-                        strQuery = strStraightStatsLayer + "." + "MIN_" + aCol.InputName + " = " + strStraightStatsLayer + "." + "MAX_" + aCol.InputName;
-                        blTest = myArcMapFuncs.SelectLayerByAttributes(strFinalInputLayer, strQuery, aLogFile: strLogFile);
+                        blTest = myArcMapFuncs.CalculateField(strFinalInputLayer, aCol.OutputName, strCalc, strCode, strLogFile);
                         if (!blTest)
                         {
-                            myFileFuncs.WriteLine(strLogFile, "Error selecting features from " + strFinalInputLayer + " using selection query " + strQuery);
-                            MessageBox.Show("Error selecting features from " + strFinalInputLayer, "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            myFileFuncs.WriteLine(strLogFile, "Error calculating field " + aCol.OutputName + " in temporary layer " + strFinalInputLayer + " using the following calculation: " + strCalc);
+                            MessageBox.Show("Error calculating into temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return lngResult;
                         }
-                        if (myArcMapFuncs.CountSelectedLayerFeatures(strFinalInputLayer) > 0)
-                        {
-                            strCalc = "[" + strStraightStatsLayer + "." + "MIN_" + aCol.InputName + "]";
-                            blTest = myArcMapFuncs.CalculateField(strFinalInputLayer, aCol.OutputName, strCalc, strLogFile);
-                            if (!blTest)
-                            {
-                                myFileFuncs.WriteLine(strLogFile, "Error calculating field " + aCol.OutputName + " in temporary layer " + strFinalInputLayer + " using the following calculation: " + strCalc);
-                                MessageBox.Show("Error calculating into temporary layer", "Data Buffer", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                return lngResult;
-                            }
-
-                            myArcMapFuncs.ClearSelectedMapFeatures(strFinalInputLayer);
-                        }
                     }
-
                 }
 
                 myArcMapFuncs.RemoveJoin(strFinalInputLayer, strLogFile);
@@ -645,8 +631,9 @@ namespace DataBuffer
                     {
                         strCommonInputFields.Add(aCol.InputName);
                         strCommonOutputFields.Add(aCol.OutputName);
+                        }
                     }
-                }
+
                 blTest = myArcMapFuncs.SetMostCommon(strFinalInputLayer, strClusterIDField, strCommonOutputFields, strTempRawLayer, strCommonInputFields, strLogFile);
                 if (!blTest)
                 {

@@ -102,6 +102,7 @@
             this.statusStrip1.Location = new System.Drawing.Point(0, 317);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(218, 22);
+            this.statusStrip1.SizingGrip = false;
             this.statusStrip1.TabIndex = 5;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -128,6 +129,7 @@
             this.statusStrip2.Location = new System.Drawing.Point(0, 295);
             this.statusStrip2.Name = "statusStrip2";
             this.statusStrip2.Size = new System.Drawing.Size(218, 22);
+            this.statusStrip2.SizingGrip = false;
             this.statusStrip2.TabIndex = 6;
             this.statusStrip2.Text = "statusStrip2";
             // 
@@ -161,7 +163,7 @@
             this.Name = "frmDataBuffer";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Data Buffer 1.0";
+            this.Text = "Data Buffer 1.1";
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.statusStrip2.ResumeLayout(false);

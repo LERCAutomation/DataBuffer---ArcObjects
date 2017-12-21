@@ -232,7 +232,9 @@ namespace HLDataBufferConfig
                 foreach (XmlNode aNode in MapLayerCollection)
                 {
                     MapLayer thisLayer = new MapLayer();
-                    thisLayer.DisplayName = aNode.Name;
+                    string strName = aNode.Name;
+                    strName = strName.Replace("_", " "); // Replace any underscores with spaces for better display.
+                    thisLayer.DisplayName = strName;
 
                     try
                     {
