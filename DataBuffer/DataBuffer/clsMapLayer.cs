@@ -13,7 +13,7 @@ namespace DataBuffer
         public string LayerName { get; set; } // the name in the TOC
         public InputColumns InputColumns { get; set; }
         public string WhereClause { get; set; }
-        public string SortOrder { get; set; }
+        //public string SortOrder { get; set; }
         public int BufferSize { get; set; }
         public int DissolveSize { get; set; }
 

@@ -47,11 +47,6 @@ layers.
   	<value>H:\Dev\LERCAutomation\DataBuffer---ArcObjects\LayerFiles</value>
   </LayerPath>
 
-  <!--The coordinate system for output -->
-  <CoordinateSystem>
-	<value>Earth Projection 8, 79, "m", -2, 49, 0.9996012717, 400000, -100000</value>
-  </CoordinateSystem>
-
   
   <!-- The names and local names of the GIS layers to be processed -->
   <InLayers>
@@ -65,9 +60,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value> <!-- for e.g. years: RecYear >= (EXTRACT(YEAR FROM CURRENT_DATE) - 11) -->
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>100</Value>
 		</BufferSize>
@@ -85,9 +77,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>100</Value>
 		</BufferSize>
@@ -105,9 +94,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>100</Value>
 		</BufferSize>
@@ -125,9 +111,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>100</Value>
 		</BufferSize>
@@ -145,9 +128,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>100</Value>
 		</BufferSize>
@@ -157,7 +137,7 @@ layers.
 	</GCNs>
 	<WaterVoles>
 		<LayerName>
-			<Value>Water_Voles_From_SQL_Point</Value>
+			<Value>Water_Voles</Value>
 		</LayerName>
 		<Columns>
 			<Value>CommonName, SciName, RecYear, GridRef, Location, Design, Version, Origin, Provider, "Provided by TVERC - for internal use only. No part of this information can be distributed or published without permission. Contains copyrighted and sensitive information" "Copyright"</Value>
@@ -165,9 +145,6 @@ layers.
 		<WhereClause>
 			<value>RecYear &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>SciName, GridRef, Location</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>20</Value>
 		</BufferSize>
@@ -185,9 +162,6 @@ layers.
 		<WhereClause>
 			<value>YearNum &gt; (EXTRACT(YEAR FROM CURRENT_DATE) - 11)</value>
 		</WhereClause>
-		<SortOrder>
-			<Value>Scientific_Name, GridRef</Value>
-		</SortOrder>
 		<BufferSize>
 			<Value>10</Value>
 		</BufferSize>
