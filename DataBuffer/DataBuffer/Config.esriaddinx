@@ -8,7 +8,7 @@
   <Company>Hester Lyons Consulting</Company>
   <Date>07/12/2017</Date>
   <Targets>
-    <Target name="Desktop" version="10.2" />
+    <Target name="Desktop" version="10.1" />
   </Targets>
   <AddIn language="CLR" library="DataBuffer.dll" namespace="DataBuffer">
     <ArcMap>
