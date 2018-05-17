@@ -13,6 +13,7 @@ D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.f
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.csproj.GenerateResource.Cache
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.dll
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.pdb
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn
+D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.frmChooseConfig.resources
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.csprojResolveAssemblyReference.cache
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn
-H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn

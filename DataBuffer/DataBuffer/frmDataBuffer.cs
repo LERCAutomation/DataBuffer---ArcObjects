@@ -1,4 +1,24 @@
-﻿using System;
+﻿// DataBuffer is an ArcGIS add-in used to create 'species alert'
+// layers from existing species data.
+//
+// Copyright © 2017 SxBRC, 2017-2018 TVERC
+//
+// This file is part of DataBuffer.
+//
+// DataBuffer is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// DataBuffer is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with DataBuffer.  If not, see <http://www.gnu.org/licenses/>.
+
+using System;
 using System.Diagnostics; // Allows Process to be called (for Notepad)
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,10 +28,12 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
+using HLBufferToolLaunchConfig;
 using HLDataBufferConfig;
 using HLArcMapModule;
 using HLFileFunctions;
-
+using DataBuffer.Properties;
+using HLStringFunctions;
 
 using ESRI.ArcGIS.Framework;
 
@@ -24,6 +46,9 @@ namespace DataBuffer
         ArcMapFunctions myArcMapFuncs;
         FileFunctions myFileFuncs;
         DataBufferConfig myConfig;
+        BufferToolLaunchConfig myLaunchConfig;
+        StringFunctions myStringFuncs;
+        string strConfigFile = "";
 
         bool blOpenForm; // this tracks all the way through initialisation whether the form should open.
 
@@ -32,21 +57,94 @@ namespace DataBuffer
             blOpenForm = true;
             InitializeComponent();
 
-            // Firstly let's read the XML.
-            myConfig = new DataBufferConfig();
-
-            // Did we find the XML?
-            if (!myConfig.FoundXML)
+            myLaunchConfig = new BufferToolLaunchConfig();
+            myFileFuncs = new FileFunctions();
+            myStringFuncs = new StringFunctions();
+            if (!myLaunchConfig.XMLFound)
             {
-                MessageBox.Show("XML file 'DataBuffer.xml' not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("XML file 'DataSelector.xml' not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                blOpenForm = false;
+            }
+            if (!myLaunchConfig.XMLLoaded)
+            {
+                MessageBox.Show("Error loading XML File 'DataSelector.xml'; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 blOpenForm = false;
             }
 
-            // Did it load OK?
-            if (blOpenForm && !myConfig.LoadedXML)
+            if (blOpenForm)
             {
-                MessageBox.Show("Error loading XML file 'DataBuffer.xml'; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                blOpenForm = false;
+                string strXMLFolder = myFileFuncs.GetDirectoryName(Settings.Default.XMLFile);
+                bool blOnlyDefault = true;
+                int intCount = 0;
+                if (myLaunchConfig.ChooseConfig) // If we are allowed to choose, check if there are multiple profiles. 
+                // If there is only the default XML file in the directory, launch the form. Otherwise the user has to choose.
+                {
+                    foreach (string strFileName in myFileFuncs.GetAllFilesInDirectory(strXMLFolder))
+                    {
+                        if (myFileFuncs.GetFileName(strFileName).ToLower() != "dataselector.xml" && myFileFuncs.GetExtension(strFileName).ToLower() == "xml")
+                        {
+                            // is it the default?
+                            intCount++;
+                            if (myFileFuncs.GetFileName(strFileName) != myLaunchConfig.DefaultXML)
+                            {
+                                blOnlyDefault = false;
+                            }
+                        }
+                    }
+                    if (intCount > 1)
+                    {
+                        blOnlyDefault = false;
+                    }
+                }
+                if (myLaunchConfig.ChooseConfig && !blOnlyDefault)
+                {
+                    // User has to choose the configuration file first.
+
+                    using (var myConfigForm = new frmChooseConfig(strXMLFolder, myLaunchConfig.DefaultXML))
+                    {
+                        var result = myConfigForm.ShowDialog();
+                        if (result == System.Windows.Forms.DialogResult.OK)
+                        {
+                            strConfigFile = strXMLFolder + "\\" + myConfigForm.ChosenXMLFile;
+                        }
+                        else
+                        {
+                            MessageBox.Show("No XML file was chosen; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            blOpenForm = false;
+                        }
+                    }
+
+                }
+                else
+                {
+                    strConfigFile = strXMLFolder + "\\" + myLaunchConfig.DefaultXML; // don't allow the user to choose, just use the default.
+                    // Just check it exists, though.
+                    if (!myFileFuncs.FileExists(strConfigFile))
+                    {
+                        MessageBox.Show("The default XML file '" + myLaunchConfig.DefaultXML + "' was not found in the XML directory; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        blOpenForm = false;
+                    }
+                }
+            }
+
+            if (blOpenForm)
+            {
+                // Firstly let's read the XML.
+                myConfig = new DataBufferConfig(strConfigFile); // Must now pass the correct XML name.
+
+                // Did we find the XML?
+                if (!myConfig.FoundXML)
+                {
+                    MessageBox.Show("XML file not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    blOpenForm = false;
+                }
+
+                // Did it load OK?
+                else if (!myConfig.LoadedXML)
+                {
+                    MessageBox.Show("Error loading XML File; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    blOpenForm = false;
+                }
             }
 
             // Close the form if there are any errors at this point.
@@ -60,7 +158,7 @@ namespace DataBuffer
             // Initialise all the helper classes.
             theApplication = ArcMap.Application;
             myArcMapFuncs = new ArcMapFunctions(theApplication);
-            myDataBufferFuncs = new DataBufferRoutine(theApplication);
+            myDataBufferFuncs = new DataBufferRoutine(theApplication, strConfigFile);
             myFileFuncs = new FileFunctions();
 
             // Now fill up the menu with the required layers.
@@ -92,8 +190,8 @@ namespace DataBuffer
                     strMessage = strMessage.Substring(0, strMessage.Length - 2) + "."; // Trim the last comma and space; add a full stop.
                 }
                 MessageBox.Show(strMessage, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }   
-      
+            }
+
             // Set the default for clear log file.
             chkClearLog.Checked = myConfig.DefaultClearLog;
         }
@@ -110,9 +208,11 @@ namespace DataBuffer
                 return;
             }
 
+            // Fix any illegal characters in the user name string
+            string strUserID = myStringFuncs.StripIllegals(Environment.UserName, "_", false);
+
             // Define the log file
-            string strUserID = Environment.UserName;
-            string strLogFile = myConfig.LogFilePath + "\\DataBuffer" + strUserID + ".log";
+            string strLogFile = myConfig.LogFilePath + "\\DataBuffer_" + strUserID + ".log";
 
             // Delete if requested
             if (chkClearLog.Checked)
@@ -165,7 +265,7 @@ namespace DataBuffer
                 }
             }
 
-            
+
 
             // Find the selected map layers.
             MapLayers Selectedlayers = new MapLayers();
@@ -182,7 +282,7 @@ namespace DataBuffer
 
 
             // Set up the data buffer functions class.
-            myDataBufferFuncs = new DataBufferRoutine(theApplication);
+            myDataBufferFuncs = new DataBufferRoutine(theApplication, strConfigFile);
             myDataBufferFuncs.InputLayers = Selectedlayers;
             myDataBufferFuncs.OutputLayer = myConfig.OutputLayer;
 
@@ -218,7 +318,7 @@ namespace DataBuffer
             {
                 this.BringToFront();
             }
-            Process.Start("notepad.exe", strLogFile); 
+            Process.Start("notepad.exe", strLogFile);
 
             // Any required tidying up.
             Selectedlayers = null;

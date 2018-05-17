@@ -1,4 +1,25 @@
-﻿using System;
+﻿// DataBuffer is an ArcGIS add-in used to create 'species alert'
+// layers from existing species data.
+//
+// Copyright © 2017 SxBRC, 2017-2018 TVERC
+//
+// This file is part of DataBuffer.
+//
+// DataBuffer is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// DataBuffer is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with DataBuffer.  If not, see <http://www.gnu.org/licenses/>.
+
+
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -24,22 +45,22 @@ namespace HLDataBufferConfig
         private string tempFilePath;
 
         //private string outColumnDefs;
-        public string LogFilePath 
-        { 
+        public string LogFilePath
+        {
             get
             {
                 return logFilePath;
-            } 
+            }
         }
 
-        public bool DefaultClearLog 
-        { 
+        public bool DefaultClearLog
+        {
             get
             {
                 return defaultClearLog;
-            } 
+            }
         }
-        public string DefaultPath 
+        public string DefaultPath
         {
             get
             {
@@ -90,7 +111,7 @@ namespace HLDataBufferConfig
                 return foundXML;
             }
         }
-        public bool LoadedXML 
+        public bool LoadedXML
         {
             get
             {
@@ -98,45 +119,20 @@ namespace HLDataBufferConfig
             }
         }
 
+        // Initialise component - read XML
         private FileFunctions myFileFuncs;
         private StringFunctions myStringFuncs;
-        private XmlElement xmlDataExtract;
+        private XmlElement xmlDataBuffer;
 
-        public DataBufferConfig()
+        public DataBufferConfig(string anXMLProfile)
         {
             // Open XML
             myFileFuncs = new FileFunctions();
             myStringFuncs = new StringFunctions();
-            string strXMLFile = null;
-            foundXML = false;
+            string strXMLFile = anXMLProfile; // The user has specified this and we've checked it exists.
+            foundXML = true; // In this version we have already checked that it exists.
             loadedXML = true;
-            
-            
-            try
-            {
-                // Get the XML file
-                strXMLFile = Settings.Default.XMLFile;
-                if (String.IsNullOrEmpty(strXMLFile) || (!myFileFuncs.FileExists(strXMLFile))) // Can't find it or doesn't exist
-                {
-                    // Prompt the user for the location of the file.
-                    string strFolder = GetConfigFilePath();
-                    if (!String.IsNullOrEmpty(strFolder))
-                        strXMLFile = strFolder + @"\DataBuffer.xml";
-                }
 
-                // check the xml file path exists
-                if (myFileFuncs.FileExists(strXMLFile))
-                {
-                    Settings.Default.XMLFile = strXMLFile;
-                    Settings.Default.Save();
-                    foundXML = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error " + ex.ToString(), MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            
             // Go forth and obtain all information.
             // Firstly, read the file.
             if (foundXML)
@@ -153,14 +149,14 @@ namespace HLDataBufferConfig
                     return;
                 }
                 string strRawText;
-                XmlNode currNode = xmlConfig.DocumentElement.FirstChild; // This gets us the DataSelector.
-                xmlDataExtract = (XmlElement)currNode;
+                XmlNode currNode = xmlConfig.DocumentElement.FirstChild; // This gets us the DataBuffer.
+                xmlDataBuffer = (XmlElement)currNode;
 
                 // XML loaded successfully; get all of the detail in the Config object.
-                
+
                 try
                 {
-                    logFilePath = xmlDataExtract["LogFilePath"].InnerText;
+                    logFilePath = xmlDataBuffer["LogFilePath"].InnerText;
                 }
                 catch
                 {
@@ -172,7 +168,7 @@ namespace HLDataBufferConfig
                 try
                 {
                     defaultClearLog = false;
-                    string strDefaultClearLogFile = xmlDataExtract["DefaultClearLogFile"].InnerText;
+                    string strDefaultClearLogFile = xmlDataBuffer["DefaultClearLogFile"].InnerText;
                     if (strDefaultClearLogFile == "Yes")
                         defaultClearLog = true;
                 }
@@ -185,7 +181,7 @@ namespace HLDataBufferConfig
 
                 try
                 {
-                    defaultPath = xmlDataExtract["DefaultPath"].InnerText;
+                    defaultPath = xmlDataBuffer["DefaultPath"].InnerText;
                 }
                 catch
                 {
@@ -196,7 +192,7 @@ namespace HLDataBufferConfig
 
                 try
                 {
-                    layerPath = xmlDataExtract["LayerPath"].InnerText;
+                    layerPath = xmlDataBuffer["LayerPath"].InnerText;
                 }
                 catch
                 {
@@ -207,7 +203,7 @@ namespace HLDataBufferConfig
 
                 try
                 {
-                    tempFilePath = xmlDataExtract["TempFilePath"].InnerText;
+                    tempFilePath = xmlDataBuffer["TempFilePath"].InnerText;
                 }
                 catch
                 {
@@ -220,7 +216,7 @@ namespace HLDataBufferConfig
                 XmlElement MapLayerCollection = null;
                 try
                 {
-                    MapLayerCollection = xmlDataExtract["InLayers"];
+                    MapLayerCollection = xmlDataBuffer["InLayers"];
                 }
                 catch
                 {
@@ -385,20 +381,18 @@ namespace HLDataBufferConfig
                         inputLayers.Add(thisLayer);
                 }
 
-
-
                 // Now get the output layer definition
                 XmlElement OutLayerDef = null;
                 try
                 {
-                    OutLayerDef = xmlDataExtract["OutLayer"];
+                    OutLayerDef = xmlDataBuffer["OutLayer"];
                 }
                 catch
                 {
                     MessageBox.Show("Could not locate the item 'OutLayer' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     loadedXML = false;
                     return;
-                } 
+                }
 
                 // Get to the columns
                 XmlNode ColumnNode = null;
@@ -413,7 +407,7 @@ namespace HLDataBufferConfig
                     return;
                 }
 
-                    
+
                 // Get all the columns.
                 OutputColumns theOutputColumns = new OutputColumns();
                 foreach (XmlNode aNode in ColumnNode)
@@ -477,7 +471,7 @@ namespace HLDataBufferConfig
                         return;
                     }
 
-                    List<string> FieldTypes = new List<string>() { "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE"};
+                    List<string> FieldTypes = new List<string>() { "TEXT", "FLOAT", "DOUBLE", "SHORT", "LONG", "DATE" };
                     try
                     {
                         strRawText = aNode["FieldType"].InnerText.ToUpper();
@@ -578,8 +572,8 @@ namespace HLDataBufferConfig
                 // Get the rest of the output layer definition
                 try
                 {
-                    string aLayer = layerPath + @"\";
-                    outputLayer.LayerFile = aLayer + OutLayerDef["LayerFile"].InnerText;
+                    outputLayer.LayerPath = layerPath + @"\";
+                    outputLayer.LayerFile = OutLayerDef["LayerFile"].InnerText;
                 }
                 catch
                 {
@@ -609,10 +603,12 @@ namespace HLDataBufferConfig
                     return;
                 }
             }
+            else
+            {
+                foundXML = false; // this has to be checked first; all other properties are empty.
+            }
+
         }
-
-        
-
 
         private string GetConfigFilePath()
         {
@@ -632,5 +628,6 @@ namespace HLDataBufferConfig
             else
                 return null;
         }
+
     }
 }
