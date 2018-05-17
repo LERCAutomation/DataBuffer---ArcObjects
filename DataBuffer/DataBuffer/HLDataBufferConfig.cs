@@ -328,16 +328,16 @@ namespace HLDataBufferConfig
                         return;
                     }
 
-                    try
-                    {
-                        thisLayer.SortOrder = aNode["SortOrder"].InnerText;
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Could not locate the item 'SortOrder' for map layer " + thisLayer.DisplayName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        loadedXML = false;
-                        return;
-                    }
+                    //try
+                    //{
+                    //    thisLayer.SortOrder = aNode["SortOrder"].InnerText;
+                    //}
+                    //catch
+                    //{
+                    //    MessageBox.Show("Could not locate the item 'SortOrder' for map layer " + thisLayer.DisplayName + " in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //    loadedXML = false;
+                    //    return;
+                    //}
 
                     try
                     {

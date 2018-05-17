@@ -6,7 +6,6 @@ H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\
 H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.dll
 H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.pdb
 H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.csprojResolveAssemblyReference.cache
-H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.dll.config
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.dll
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.pdb
@@ -16,3 +15,4 @@ D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.d
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.pdb
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Release\DataBuffer.csprojResolveAssemblyReference.cache
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn
+H:\Dev\LERCAutomation\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Release\DataBuffer.esriAddIn
