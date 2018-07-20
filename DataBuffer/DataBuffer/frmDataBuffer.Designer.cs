@@ -163,7 +163,7 @@
             this.Name = "frmDataBuffer";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Data Buffer 1.1";
+            this.Text = "Data Buffer 1.2.1";
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.statusStrip2.ResumeLayout(false);

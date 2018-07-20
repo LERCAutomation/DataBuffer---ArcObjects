@@ -32,9 +32,9 @@ using HLFileFunctions;
 using HLStringFunctions;
 
 
-namespace HLDataBufferConfig
+namespace HLBufferToolConfig
 {
-    class DataBufferConfig
+    class BufferToolConfig
     {
         // Declare all the variables.
         // Environment and menu variables.
@@ -42,7 +42,7 @@ namespace HLDataBufferConfig
         private bool defaultClearLog;
         private string defaultPath;
         private string layerPath;
-        private string tempFilePath;
+        //private string tempFilePath;
 
         //private string outColumnDefs;
         public string LogFilePath
@@ -76,13 +76,13 @@ namespace HLDataBufferConfig
             }
         }
 
-        public string TempFilePath
-        {
-            get
-            {
-                return tempFilePath;
-            }
-        }
+        //public string TempFilePath
+        //{
+        //    get
+        //    {
+        //        return tempFilePath;
+        //    }
+        //}
 
         private MapLayers inputLayers = new MapLayers();
         public MapLayers InputLayers
@@ -124,7 +124,7 @@ namespace HLDataBufferConfig
         private StringFunctions myStringFuncs;
         private XmlElement xmlDataBuffer;
 
-        public DataBufferConfig(string anXMLProfile)
+        public BufferToolConfig(string anXMLProfile)
         {
             // Open XML
             myFileFuncs = new FileFunctions();
@@ -201,16 +201,16 @@ namespace HLDataBufferConfig
                     return;
                 }
 
-                try
-                {
-                    tempFilePath = xmlDataBuffer["TempFilePath"].InnerText;
-                }
-                catch
-                {
-                    MessageBox.Show("Could not locate the item 'TempFilePath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    loadedXML = false;
-                    return;
-                }
+                //try
+                //{
+                //    tempFilePath = xmlDataBuffer["TempFilePath"].InnerText;
+                //}
+                //catch
+                //{
+                //    MessageBox.Show("Could not locate the item 'TempFilePath' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //    loadedXML = false;
+                //    return;
+                //}
 
                 // Locate the GIS Layers.
                 XmlElement MapLayerCollection = null;

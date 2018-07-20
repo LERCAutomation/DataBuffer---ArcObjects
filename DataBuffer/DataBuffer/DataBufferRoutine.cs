@@ -27,7 +27,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 
 using HLArcMapModule;
-using HLDataBufferConfig;
+using HLBufferToolConfig;
 using HLFileFunctions;
 using HLStringFunctions;
 
@@ -43,14 +43,14 @@ namespace DataBuffer
         public string OutputFile { get; set; }
 
         private ArcMapFunctions myArcMapFuncs;
-        private DataBufferConfig myConfig;
+        private BufferToolConfig myConfig;
         private FileFunctions myFileFuncs;
 
         public DataBufferRoutine(IApplication theApplication, string strConfigFile) // comes from the interface hence through the form.
         {
             // Get all the essentials up and running
             myArcMapFuncs = new ArcMapFunctions(theApplication);
-            myConfig = new DataBufferConfig(strConfigFile); // Must now pass the correct XML name.
+            myConfig = new BufferToolConfig(strConfigFile); // Must now pass the correct XML name.
             myFileFuncs = new FileFunctions();
         }
 
@@ -122,7 +122,8 @@ namespace DataBuffer
             string strOutFolder = myFileFuncs.GetDirectoryName(anOutputFile);
 
             // 2a. Create a temporary directory, and a GDB inside.
-            string strTempDir = myConfig.TempFilePath;
+            //string strTempDir = myConfig.TempFilePath;
+            string strTempDir = System.IO.Path.GetTempPath();
             
             if (!myFileFuncs.DirExists(strTempDir))
             {
@@ -139,6 +140,7 @@ namespace DataBuffer
                 }
                 myFileFuncs.WriteLine(strLogFile, "Temporary folder created.");
             }
+
             string strTempGDB = strTempDir + @"\Temp.gdb";
             if (!myFileFuncs.DirExists(strTempGDB))
             {

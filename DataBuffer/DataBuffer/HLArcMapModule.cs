@@ -1088,7 +1088,7 @@ namespace HLArcMapModule
             {
                 IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
                 IWorkspace2 pWS = (IWorkspace2)pWSF.OpenFromFile(aFilePath, 0);
-                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType .esriDTTable, aDatasetName))
+                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType.esriDTTable, aDatasetName))
                     return true;
                 else
                     return false;

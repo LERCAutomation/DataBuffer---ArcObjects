@@ -29,7 +29,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using HLBufferToolLaunchConfig;
-using HLDataBufferConfig;
+using HLBufferToolConfig;
 using HLArcMapModule;
 using HLFileFunctions;
 using DataBuffer.Properties;
@@ -41,13 +41,14 @@ namespace DataBuffer
 {
     public partial class frmDataBuffer : Form
     {
+        BufferToolConfig myConfig;
         IApplication theApplication;
         DataBufferRoutine myDataBufferFuncs;
         ArcMapFunctions myArcMapFuncs;
         FileFunctions myFileFuncs;
-        DataBufferConfig myConfig;
-        BufferToolLaunchConfig myLaunchConfig;
         StringFunctions myStringFuncs;
+        BufferToolLaunchConfig myLaunchConfig;
+        string strUserID;
         string strConfigFile = "";
 
         bool blOpenForm; // this tracks all the way through initialisation whether the form should open.
@@ -57,17 +58,18 @@ namespace DataBuffer
             blOpenForm = true;
             InitializeComponent();
 
-            myLaunchConfig = new BufferToolLaunchConfig();
             myFileFuncs = new FileFunctions();
             myStringFuncs = new StringFunctions();
+
+            myLaunchConfig = new BufferToolLaunchConfig();
             if (!myLaunchConfig.XMLFound)
             {
-                MessageBox.Show("XML file 'DataSelector.xml' not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("XML file 'DataBuffer.xml' not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 blOpenForm = false;
             }
             if (!myLaunchConfig.XMLLoaded)
             {
-                MessageBox.Show("Error loading XML File 'DataSelector.xml'; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading XML File 'DataBuffer.xml'; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 blOpenForm = false;
             }
 
@@ -81,7 +83,7 @@ namespace DataBuffer
                 {
                     foreach (string strFileName in myFileFuncs.GetAllFilesInDirectory(strXMLFolder))
                     {
-                        if (myFileFuncs.GetFileName(strFileName).ToLower() != "dataselector.xml" && myFileFuncs.GetExtension(strFileName).ToLower() == "xml")
+                        if (myFileFuncs.GetFileName(strFileName).ToLower() != "databuffer.xml" && myFileFuncs.GetExtension(strFileName).ToLower() == "xml")
                         {
                             // is it the default?
                             intCount++;
@@ -130,7 +132,7 @@ namespace DataBuffer
             if (blOpenForm)
             {
                 // Firstly let's read the XML.
-                myConfig = new DataBufferConfig(strConfigFile); // Must now pass the correct XML name.
+                myConfig = new BufferToolConfig(strConfigFile); // Must now pass the correct XML name.
 
                 // Did we find the XML?
                 if (!myConfig.FoundXML)
@@ -153,6 +155,9 @@ namespace DataBuffer
                 Load += (s, e) => Close();
                 return;
             }
+
+            // Fix any illegal characters in the user name string
+            strUserID = myStringFuncs.StripIllegals(Environment.UserName, "_", false);
 
             // We're all set to show the form. Set it up.
             // Initialise all the helper classes.
@@ -207,9 +212,6 @@ namespace DataBuffer
                 this.Cursor = Cursors.Default;
                 return;
             }
-
-            // Fix any illegal characters in the user name string
-            string strUserID = myStringFuncs.StripIllegals(Environment.UserName, "_", false);
 
             // Define the log file
             string strLogFile = myConfig.LogFilePath + "\\DataBuffer_" + strUserID + ".log";

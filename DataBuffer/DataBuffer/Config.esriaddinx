@@ -1,19 +1,25 @@
 ﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Name>DataBuffer</Name>
   <AddInID>{3c31cf95-29d5-4c0e-af31-ef49edffb388}</AddInID>
-  <Description>Data Buffer tool (c) 2017 SxBRC, 2017-2018 TVERC.</Description>
-  <Version>1.1</Version>
+  <Description>Create 'species alert' layers from existing species data.&#13;&#10;(c) 2017 SxBRC, 2017-2018 TVERC.</Description>
+  <Version>1.2.1</Version>
   <Image>Images\DataBuffer.png</Image>
   <Author>Hester Lyons</Author>
   <Company>Hester Lyons Consulting</Company>
-  <Date>17/05/2017</Date>
+  <Date>08/06/2018</Date>
   <Targets>
     <Target name="Desktop" version="10.1" />
   </Targets>
   <AddIn language="CLR" library="DataBuffer.dll" namespace="DataBuffer">
     <ArcMap>
       <Commands>
-        <Button id="Hester_Lyons_Consulting_DataBuffer" class="DataBuffer" message="Create 'species alert' layers from existing species data." caption="Data Buffer Tool" tip="Data Buffer tool" category="Add-In Controls" image="Images\btnDataBuffer.png" />
+        <Button id="Hester_Lyons_Consulting_DataBuffer"
+                class="DataBuffer"
+                message="Create 'species alert' layers from existing species data."
+                caption="Data Buffer"
+                tip="Data Buffer tool"
+                category="Add-In Controls"
+                image="Images\btnDataBuffer.png" />
       </Commands>
     </ArcMap>
   </AddIn>
