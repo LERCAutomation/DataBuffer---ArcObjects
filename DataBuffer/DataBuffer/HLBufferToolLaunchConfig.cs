@@ -74,7 +74,7 @@ namespace HLBufferToolLaunchConfig
                 }
 
                 // Check the xml file path exists
-                if (myFileFuncs.FileExists(strXMLFile))
+                if (!String.IsNullOrEmpty(strXMLFile) && (myFileFuncs.FileExists(strXMLFile)))
                 {
                     Settings.Default.XMLFile = strXMLFile;
                     Settings.Default.Save();

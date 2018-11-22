@@ -17,3 +17,13 @@ D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.csp
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.dll
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.pdb
 D:\GitHub\DataBuffer---ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.esriAddIn
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.dll.config
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.dll
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.pdb
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.csprojResolveAssemblyReference.cache
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.frmChooseConfig.resources
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.frmDataBuffer.resources
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.csproj.GenerateResource.Cache
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.dll
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\obj\Debug\DataBuffer.pdb
+D:\GitHub\DataBuffer-ArcObjects\DataBuffer\DataBuffer\bin\Debug\DataBuffer.esriAddIn

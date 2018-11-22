@@ -163,7 +163,8 @@
             this.Name = "frmDataBuffer";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Data Buffer 1.2.1";
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = "Data Buffer " + string.Format("{0}.{1}.{2}", version.Major, version.Minor, version.Build);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.statusStrip2.ResumeLayout(false);
